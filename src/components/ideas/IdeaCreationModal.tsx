@@ -1,7 +1,9 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHackathons } from '@/hooks/useHackathons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { dataService } from '@/services/dataService';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Loader2 } from 'lucide-react';
 
 interface IdeaCreationModalProps {
   isOpen: boolean;
@@ -25,6 +27,8 @@ interface IdeaCreationModalProps {
 const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { data: hackathons } = useHackathons();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -38,12 +42,44 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({ isOpen, onClose }
   const [newTech, setNewTech] = useState('');
   const [newRequirement, setNewRequirement] = useState({ skill: '', description: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Creating idea:', formData);
-    // TODO: Implement idea creation
-    onClose();
-    // Reset form
+  const createIdeaMutation = useMutation({
+    mutationFn: async (ideaData: any) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      return dataService.createIdea({
+        ...ideaData,
+        owner: user,
+        participants: [],
+        currentStage: 1,
+        requirements: ideaData.requirements.map((req: any, index: number) => ({
+          id: `req-${Date.now()}-${index}`,
+          skill: req.skill,
+          description: req.description,
+          isOpen: true,
+          responses: []
+        }))
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ideas'] });
+      toast({
+        title: "Success",
+        description: "Your idea has been created successfully!",
+      });
+      onClose();
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create idea. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Failed to create idea:', error);
+    }
+  });
+
+  const resetForm = () => {
     setFormData({
       title: '',
       description: '',
@@ -52,6 +88,13 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({ isOpen, onClose }
       isLongRunning: false,
       requirements: []
     });
+    setNewTech('');
+    setNewRequirement({ skill: '', description: '' });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createIdeaMutation.mutate(formData);
   };
 
   const addTechStack = () => {
@@ -222,7 +265,11 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({ isOpen, onClose }
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!formData.title || !formData.description || !formData.hackathonId}>
+            <Button 
+              type="submit" 
+              disabled={!formData.title || !formData.description || !formData.hackathonId || createIdeaMutation.isPending}
+            >
+              {createIdeaMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Idea
             </Button>
           </div>

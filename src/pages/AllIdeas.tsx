@@ -2,12 +2,15 @@
 import React, { useState } from 'react';
 import { useIdeas } from '@/hooks/useIdeas';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { dataService } from '@/services/dataService';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lightbulb, Users, Search, Filter, Plus, ArrowRight } from 'lucide-react';
+import { Lightbulb, Users, Search, Plus, ArrowRight, Loader2 } from 'lucide-react';
 import LoadingCard from '@/components/common/LoadingCard';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
@@ -15,10 +18,42 @@ import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
 const AllIdeas = () => {
   const { data: ideas, isLoading, error } = useIdeas();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
   const [filterTech, setFilterTech] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const joinIdeaMutation = useMutation({
+    mutationFn: async (ideaId: string) => {
+      if (!user) throw new Error('User not authenticated');
+      return dataService.joinIdea(ideaId, user.id);
+    },
+    onSuccess: (success, ideaId) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['ideas'] });
+        toast({
+          title: "Success",
+          description: "You have successfully joined the idea!",
+        });
+      } else {
+        toast({
+          title: "Unable to join",
+          description: "You may already be a participant or the idea is full.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to join idea. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Failed to join idea:', error);
+    }
+  });
 
   if (isLoading) {
     return (
@@ -60,8 +95,11 @@ const AllIdeas = () => {
   };
 
   const handleJoinIdea = (ideaId: string) => {
-    console.log('Joining idea:', ideaId);
-    // TODO: Implement join functionality
+    joinIdeaMutation.mutate(ideaId);
+  };
+
+  const isUserParticipant = (idea: any) => {
+    return idea.participants.some((p: any) => p.id === user?.id) || idea.owner.id === user?.id;
   };
 
   return (
@@ -182,11 +220,15 @@ const AllIdeas = () => {
                 <div className="flex space-x-2">
                   <Button 
                     className="flex-1" 
-                    variant={idea.owner.id === user?.id ? "outline" : "default"}
+                    variant={isUserParticipant(idea) ? "outline" : "default"}
                     onClick={() => handleJoinIdea(idea.id)}
-                    disabled={idea.owner.id === user?.id}
+                    disabled={isUserParticipant(idea) || joinIdeaMutation.isPending}
                   >
-                    {idea.owner.id === user?.id ? 'Your Idea' : 'Join Idea'}
+                    {joinIdeaMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isUserParticipant(idea) ? 
+                      (idea.owner.id === user?.id ? 'Your Idea' : 'Joined') : 
+                      'Join Idea'
+                    }
                   </Button>
                   <Button size="sm" variant="ghost">
                     <ArrowRight className="h-4 w-4" />

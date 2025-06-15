@@ -43,11 +43,11 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navbar onMenuToggle={handleMenuToggle} isMobileMenuOpen={isMobileMenuOpen} />
       <div className="flex h-[calc(100vh-4rem)]">
         {/* Sidebar */}
-        <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:block fixed md:relative z-30 h-full bg-white shadow-lg md:shadow-none`}>
+        <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:block fixed md:relative z-30 h-full bg-white/80 backdrop-blur-md shadow-lg md:shadow-none border-r border-slate-200/50`}>
           <Sidebar 
             activeView={activeView} 
             onViewChange={setActiveView} 
@@ -58,7 +58,7 @@ const MainLayout = () => {
         {/* Mobile overlay */}
         {isMobileMenuOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-20 md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
@@ -66,7 +66,9 @@ const MainLayout = () => {
         {/* Main content */}
         <div className="flex-1 overflow-auto">
           <div className="container max-w-7xl mx-auto p-6">
-            {renderContent()}
+            <div className="bg-white/40 backdrop-blur-sm rounded-xl border border-white/50 shadow-xl p-6">
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>

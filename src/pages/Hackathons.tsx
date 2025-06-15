@@ -1,15 +1,52 @@
 
 import React from 'react';
 import { useHackathons } from '@/hooks/useHackathons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { dataService } from '@/services/dataService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Clock, Trophy } from 'lucide-react';
+import { Calendar, Users, Clock, Trophy, Loader2 } from 'lucide-react';
 import LoadingCard from '@/components/common/LoadingCard';
 import ErrorMessage from '@/components/common/ErrorMessage';
 
 const Hackathons = () => {
   const { data: hackathons, isLoading, error } = useHackathons();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const joinHackathonMutation = useMutation({
+    mutationFn: async (hackathonId: string) => {
+      if (!user) throw new Error('User not authenticated');
+      return dataService.joinHackathon(hackathonId, user.id);
+    },
+    onSuccess: (success) => {
+      if (success) {
+        queryClient.invalidateQueries({ queryKey: ['hackathons'] });
+        toast({
+          title: "Success",
+          description: "You have successfully joined the hackathon!",
+        });
+      } else {
+        toast({
+          title: "Unable to join",
+          description: "The hackathon may be full or you may already be registered.",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to join hackathon. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Failed to join hackathon:', error);
+    }
+  });
 
   if (isLoading) {
     return (
@@ -43,6 +80,10 @@ const Hackathons = () => {
     const diffTime = targetDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  const handleJoinHackathon = (hackathonId: string) => {
+    joinHackathonMutation.mutate(hackathonId);
   };
 
   return (
@@ -105,8 +146,15 @@ const Hackathons = () => {
                 </div>
                 
                 <div className="pt-2">
-                  <Button className="w-full" variant={hackathon.status === 'active' ? 'default' : 'outline'}>
-                    {hackathon.status === 'active' ? 'Join Now' : hackathon.status === 'upcoming' ? 'Register Interest' : 'View Results'}
+                  <Button 
+                    className="w-full" 
+                    variant={hackathon.status === 'active' ? 'default' : 'outline'}
+                    onClick={() => handleJoinHackathon(hackathon.id)}
+                    disabled={hackathon.status === 'completed' || joinHackathonMutation.isPending}
+                  >
+                    {joinHackathonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {hackathon.status === 'active' ? 'Join Now' : 
+                     hackathon.status === 'upcoming' ? 'Register Interest' : 'View Results'}
                   </Button>
                 </div>
               </CardContent>
