@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Calendar, 
   Lightbulb, 
@@ -13,11 +14,18 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import { mockHackathons, mockIdeas, mockUsers } from '@/data/mockData';
+import { useHackathons } from '@/hooks/useHackathons';
+import { useIdeas } from '@/hooks/useIdeas';
+import { mockUsers } from '@/data/mockData';
+import LoadingCard from '@/components/common/LoadingCard';
+import ErrorMessage from '@/components/common/ErrorMessage';
 
 const AdminDashboard = () => {
-  const activeHackathons = mockHackathons.filter(h => h.status === 'active');
-  const totalIdeas = mockIdeas.length;
+  const { data: hackathons, isLoading: hackathonsLoading, error: hackathonsError, refetch: refetchHackathons } = useHackathons();
+  const { data: ideas, isLoading: ideasLoading, error: ideasError, refetch: refetchIdeas } = useIdeas();
+
+  const activeHackathons = hackathons?.filter(h => h.status === 'active') || [];
+  const totalIdeas = ideas?.length || 0;
   const totalUsers = mockUsers.filter(u => u.role === 'user').length;
   const completionRate = 75; // Mock completion rate
 
@@ -38,6 +46,25 @@ const AdminDashboard = () => {
     }
   };
 
+  // Show error if both requests failed
+  if (hackathonsError && ideasError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600 mt-2">Manage hackathons, ideas, and participants</p>
+        </div>
+        <ErrorMessage 
+          message="Failed to load dashboard data" 
+          onRetry={() => {
+            refetchHackathons();
+            refetchIdeas();
+          }} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -53,10 +80,19 @@ const AdminDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeHackathons.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {mockHackathons.filter(h => h.status === 'upcoming').length} upcoming
-            </p>
+            {hackathonsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{activeHackathons.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {hackathons?.filter(h => h.status === 'upcoming').length || 0} upcoming
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -66,10 +102,19 @@ const AdminDashboard = () => {
             <Lightbulb className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalIdeas}</div>
-            <p className="text-xs text-muted-foreground">
-              {mockIdeas.filter(i => !i.isLongRunning).length} active projects
-            </p>
+            {ideasLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalIdeas}</div>
+                <p className="text-xs text-muted-foreground">
+                  {ideas?.filter(i => !i.isLongRunning).length || 0} active projects
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -105,26 +150,50 @@ const AdminDashboard = () => {
           <CardDescription>Currently running hackathon events</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {activeHackathons.map((hackathon) => (
-              <div key={hackathon.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="space-y-1">
-                  <h3 className="font-semibold">{hackathon.name}</h3>
-                  <p className="text-sm text-gray-600">{hackathon.description}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span>Ends: {new Date(hackathon.endDate).toLocaleDateString()}</span>
-                    <Badge variant="secondary">
-                      {hackathon.currentParticipants}/{hackathon.maxParticipants} participants
-                    </Badge>
+          {hackathonsLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="p-4 border border-gray-200 rounded-lg">
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <div className="flex space-x-2">
+                        <Skeleton className="h-8 w-16" />
+                        <Skeleton className="h-8 w-20" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">Manage</Button>
-                  <Button size="sm">View Details</Button>
+              ))}
+            </div>
+          ) : hackathonsError ? (
+            <ErrorMessage message="Failed to load hackathons" onRetry={refetchHackathons} />
+          ) : activeHackathons.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No active hackathons at the moment.</p>
+          ) : (
+            <div className="space-y-4">
+              {activeHackathons.map((hackathon) => (
+                <div key={hackathon.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold">{hackathon.name}</h3>
+                    <p className="text-sm text-gray-600">{hackathon.description}</p>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>Ends: {new Date(hackathon.endDate).toLocaleDateString()}</span>
+                      <Badge variant="secondary">
+                        {hackathon.currentParticipants}/{hackathon.maxParticipants} participants
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" size="sm">Manage</Button>
+                    <Button size="sm">View Details</Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

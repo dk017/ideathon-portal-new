@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Calendar, 
   Lightbulb, 
@@ -12,16 +13,22 @@ import {
   Trophy,
   Target
 } from 'lucide-react';
-import { mockHackathons, mockIdeas } from '@/data/mockData';
+import { useHackathons } from '@/hooks/useHackathons';
+import { useIdeas } from '@/hooks/useIdeas';
 import { useAuth } from '@/contexts/AuthContext';
+import LoadingCard from '@/components/common/LoadingCard';
+import ErrorMessage from '@/components/common/ErrorMessage';
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const activeHackathons = mockHackathons.filter(h => h.status === 'active');
-  const userIdeas = mockIdeas.filter(i => i.owner.id === user?.id);
-  const participatingIdeas = mockIdeas.filter(i => 
+  const { data: hackathons, isLoading: hackathonsLoading, error: hackathonsError, refetch: refetchHackathons } = useHackathons();
+  const { data: ideas, isLoading: ideasLoading, error: ideasError, refetch: refetchIdeas } = useIdeas();
+
+  const activeHackathons = hackathons?.filter(h => h.status === 'active') || [];
+  const userIdeas = ideas?.filter(i => i.owner.id === user?.id) || [];
+  const participatingIdeas = ideas?.filter(i => 
     i.participants.some(p => p.id === user?.id) && i.owner.id !== user?.id
-  );
+  ) || [];
 
   const upcomingDeadlines = [
     { event: 'AI Innovation Challenge - Planning Phase', date: '2024-07-01', type: 'deadline' },
@@ -33,6 +40,25 @@ const UserDashboard = () => {
     { title: 'Team Player', description: 'Joined 3 different teams', earned: true },
     { title: 'Innovation Leader', description: 'Led a team to completion', earned: false },
   ];
+
+  // Show error if both requests failed
+  if (hackathonsError && ideasError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+          <p className="text-gray-600 mt-2">Track your hackathon progress and discover new opportunities</p>
+        </div>
+        <ErrorMessage 
+          message="Failed to load dashboard data" 
+          onRetry={() => {
+            refetchHackathons();
+            refetchIdeas();
+          }} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -49,10 +75,19 @@ const UserDashboard = () => {
             <Lightbulb className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userIdeas.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {userIdeas.filter(i => !i.isLongRunning).length} active
-            </p>
+            {ideasLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{userIdeas.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {userIdeas.filter(i => !i.isLongRunning).length} active
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -62,10 +97,19 @@ const UserDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{participatingIdeas.length}</div>
-            <p className="text-xs text-muted-foreground">
-              collaborating on ideas
-            </p>
+            {ideasLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{participatingIdeas.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  collaborating on ideas
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -75,10 +119,19 @@ const UserDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeHackathons.length}</div>
-            <p className="text-xs text-muted-foreground">
-              hackathons available
-            </p>
+            {hackathonsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{activeHackathons.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  hackathons available
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -90,40 +143,52 @@ const UserDashboard = () => {
           <CardDescription>Join exciting hackathon events</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {activeHackathons.map((hackathon) => {
-              const daysLeft = Math.ceil((new Date(hackathon.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-              const progress = (hackathon.currentParticipants / (hackathon.maxParticipants || 100)) * 100;
-              
-              return (
-                <div key={hackathon.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="space-y-3">
-                    <div>
-                      <h3 className="font-semibold text-lg">{hackathon.name}</h3>
-                      <p className="text-sm text-gray-600">{hackathon.description}</p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <Badge variant={daysLeft > 7 ? "secondary" : "destructive"}>
-                        <Clock className="w-3 h-3 mr-1" />
-                        {daysLeft} days left
-                      </Badge>
-                      <span className="text-gray-500">
-                        {hackathon.currentParticipants} participants
-                      </span>
-                    </div>
-                    
-                    <Progress value={progress} className="h-2" />
-                    
-                    <div className="flex space-x-2">
-                      <Button size="sm" className="flex-1">Join Event</Button>
-                      <Button variant="outline" size="sm">Learn More</Button>
+          {hackathonsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map((i) => (
+                <LoadingCard key={i} />
+              ))}
+            </div>
+          ) : hackathonsError ? (
+            <ErrorMessage message="Failed to load hackathons" onRetry={refetchHackathons} />
+          ) : activeHackathons.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No active hackathons at the moment.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeHackathons.map((hackathon) => {
+                const daysLeft = Math.ceil((new Date(hackathon.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const progress = (hackathon.currentParticipants / (hackathon.maxParticipants || 100)) * 100;
+                
+                return (
+                  <div key={hackathon.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">{hackathon.name}</h3>
+                        <p className="text-sm text-gray-600">{hackathon.description}</p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <Badge variant={daysLeft > 7 ? "secondary" : "destructive"}>
+                          <Clock className="w-3 h-3 mr-1" />
+                          {daysLeft} days left
+                        </Badge>
+                        <span className="text-gray-500">
+                          {hackathon.currentParticipants} participants
+                        </span>
+                      </div>
+                      
+                      <Progress value={progress} className="h-2" />
+                      
+                      <div className="flex space-x-2">
+                        <Button size="sm" className="flex-1">Join Event</Button>
+                        <Button variant="outline" size="sm">Learn More</Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
