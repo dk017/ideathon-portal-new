@@ -1,40 +1,54 @@
-import React, { useState } from 'react';
-import { useIdeas } from '@/hooks/useIdeas';
-import { useAuth } from '@/contexts/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataService } from '@/services/dataService';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lightbulb, Users, Search, Plus, ArrowRight, Loader2 } from 'lucide-react';
-import LoadingCard from '@/components/common/LoadingCard';
-import ErrorMessage from '@/components/common/ErrorMessage';
-import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
-import IdeaDetailsModal from '@/components/ideas/IdeaDetailsModal';
+import React, { useState } from "react";
+import { useIdeas } from "@/hooks/useIdeas";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { dataService } from "@/services/dataService";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Lightbulb,
+  Users,
+  Search,
+  Plus,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+import LoadingCard from "@/components/common/LoadingCard";
+import ErrorMessage from "@/components/common/ErrorMessage";
+import IdeaCreationModal from "@/components/ideas/IdeaCreationModal";
+import IdeaDetailsModal from "@/components/ideas/IdeaDetailsModal";
+import { Idea, JoinRequest, User } from "@/types";
 
 const AllIdeas = () => {
   const { data: ideas, isLoading, error } = useIdeas();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStage, setFilterStage] = useState('all');
-  const [filterTech, setFilterTech] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStage, setFilterStage] = useState("all");
+  const [filterTech, setFilterTech] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedIdea, setSelectedIdea] = useState<any>(null);
+  const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const joinIdeaMutation = useMutation({
     mutationFn: async (ideaId: string) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error("User not authenticated");
       return dataService.joinIdea(ideaId, user.id);
     },
     onSuccess: (success, ideaId) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ['ideas'] });
+        queryClient.invalidateQueries({ queryKey: ["ideas"] });
         toast({
           title: "Success",
           description: "You have successfully joined the idea!",
@@ -53,14 +67,99 @@ const AllIdeas = () => {
         description: "Failed to join idea. Please try again.",
         variant: "destructive",
       });
-      console.error('Failed to join idea:', error);
-    }
+      console.error("Failed to join idea:", error);
+    },
+  });
+
+  const requestJoinMutation = useMutation({
+    mutationFn: async (ideaId: string) => {
+      if (!user) throw new Error("User not authenticated");
+      return dataService.requestJoinIdea(ideaId, user.id);
+    },
+    onSuccess: (result, ideaId) => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      if (result === "requested") {
+        toast({
+          title: "Request Sent",
+          description: "Your join request has been sent.",
+        });
+      } else if (result === "already-requested") {
+        toast({
+          title: "Already Requested",
+          description: "You have already requested to join this idea.",
+        });
+      } else if (result === "already-participant") {
+        toast({
+          title: "Already Joined",
+          description: "You are already a participant of this idea.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send join request.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const acceptJoinMutation = useMutation({
+    mutationFn: async ({
+      ideaId,
+      userId,
+    }: {
+      ideaId: string;
+      userId: string;
+    }) => {
+      return dataService.acceptJoinRequest(ideaId, userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast({
+        title: "Request Accepted",
+        description: "User has been added as a participant.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to accept join request.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectJoinMutation = useMutation({
+    mutationFn: async ({
+      ideaId,
+      userId,
+    }: {
+      ideaId: string;
+      userId: string;
+    }) => {
+      return dataService.rejectJoinRequest(ideaId, userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ideas"] });
+      toast({
+        title: "Request Rejected",
+        description: "Join request has been rejected.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject join request.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">All Ideas</h1>
+        <h1 className="text-3xl font-bold text-foreground">All Ideas</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <LoadingCard key={i} />
@@ -74,42 +173,55 @@ const AllIdeas = () => {
     return <ErrorMessage message="Failed to load ideas" />;
   }
 
-  const filteredIdeas = ideas?.filter(idea => {
-    const matchesSearch = idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         idea.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStage = filterStage === 'all' || idea.currentStage.toString() === filterStage;
-    const matchesTech = filterTech === 'all' || idea.techStack.some(tech => 
-      tech.toLowerCase().includes(filterTech.toLowerCase())
-    );
-    
+  const filteredIdeas = ideas?.filter((idea) => {
+    const matchesSearch =
+      idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      idea.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStage =
+      filterStage === "all" || idea.currentStage.toString() === filterStage;
+    const matchesTech =
+      filterTech === "all" ||
+      idea.techStack.some((tech) =>
+        tech.toLowerCase().includes(filterTech.toLowerCase())
+      );
+
     return matchesSearch && matchesStage && matchesTech;
   });
 
   const getStageColor = (stage: number) => {
     const colors = [
-      'status-open',
-      'status-planning', 
-      'status-development',
-      'status-testing',
-      'status-complete'
+      "status-open",
+      "status-planning",
+      "status-development",
+      "status-testing",
+      "status-complete",
     ];
     return colors[stage - 1] || colors[0];
   };
 
   const getStageText = (stage: number) => {
-    const stages = ['Ideation', 'Planning', 'Development', 'Testing', 'Presentation'];
-    return stages[stage - 1] || 'Unknown';
+    const stages = [
+      "Ideation",
+      "Planning",
+      "Development",
+      "Testing",
+      "Presentation",
+    ];
+    return stages[stage - 1] || "Unknown";
   };
 
   const handleJoinIdea = (ideaId: string) => {
     joinIdeaMutation.mutate(ideaId);
   };
 
-  const isUserParticipant = (idea: any) => {
-    return idea.participants.some((p: any) => p.id === user?.id) || idea.owner.id === user?.id;
+  const isUserParticipant = (idea: Idea) => {
+    return (
+      idea.participants.some((p: User) => p.id === user?.id) ||
+      idea.owner.id === user?.id
+    );
   };
 
-  const handleViewDetails = (idea: any) => {
+  const handleViewDetails = (idea: Idea) => {
     setSelectedIdea(idea);
     setShowDetailsModal(true);
   };
@@ -117,8 +229,8 @@ const AllIdeas = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">All Ideas</h1>
-        <Button 
+        <h1 className="text-3xl font-bold text-foreground">All Ideas</h1>
+        <Button
           onClick={() => setShowCreateModal(true)}
           className="gradient-button text-white hover:shadow-lg"
         >
@@ -174,77 +286,98 @@ const AllIdeas = () => {
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-2">
                   <Lightbulb className="h-5 w-5 text-indigo-500" />
-                  <span className="text-sm text-gray-500">{idea.referenceNumber}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {idea.referenceNumber}
+                  </span>
                 </div>
                 {idea.isLongRunning && (
-                  <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">
+                  <Badge
+                    variant="outline"
+                    className="border-purple-200 text-purple-700 bg-purple-50"
+                  >
                     Long Running
                   </Badge>
                 )}
               </div>
-              <CardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-indigo-600 transition-colors">
+              <CardTitle className="text-lg font-semibold line-clamp-2 group-hover:text-indigo-600 transition-colors text-foreground">
                 {idea.title}
               </CardTitle>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
-              <p className="text-gray-600 text-sm line-clamp-3">
+              <p className="text-muted-foreground text-sm line-clamp-3">
                 {idea.description}
               </p>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Badge className={`${getStageColor(idea.currentStage)} text-white border-0`}>
+                  <Badge
+                    className={`${getStageColor(
+                      idea.currentStage
+                    )} text-white border-0`}
+                  >
                     {getStageText(idea.currentStage)}
                   </Badge>
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Users className="mr-1 h-4 w-4" />
                     {idea.participants.length}
                   </div>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-1">
                   {idea.techStack.slice(0, 3).map((tech, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs bg-indigo-50 text-indigo-700">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="text-xs bg-indigo-50 text-indigo-700"
+                    >
                       {tech}
                     </Badge>
                   ))}
                   {idea.techStack.length > 3 && (
-                    <Badge variant="secondary" className="text-xs bg-indigo-50 text-indigo-700">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-indigo-50 text-indigo-700"
+                    >
                       +{idea.techStack.length - 3}
                     </Badge>
                   )}
                 </div>
-                
-                <div className="text-sm text-gray-500">
+
+                <div className="text-sm text-muted-foreground">
                   <span>Owner: {idea.owner.name}</span>
                 </div>
               </div>
-              
+
               <div className="pt-2 space-y-2">
-                {idea.requirements.some(req => req.isOpen) && (
+                {idea.requirements.some((req) => req.isOpen) && (
                   <div className="flex items-center text-sm text-indigo-600 bg-indigo-50 p-2 rounded">
                     <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2 animate-pulse"></div>
                     Open requirements available
                   </div>
                 )}
-                
+
                 <div className="flex space-x-2">
-                  <Button 
-                    className="flex-1" 
+                  <Button
+                    className="flex-1"
                     variant={isUserParticipant(idea) ? "outline" : "default"}
                     onClick={() => handleJoinIdea(idea.id)}
-                    disabled={isUserParticipant(idea) || joinIdeaMutation.isPending}
-                  >
-                    {joinIdeaMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isUserParticipant(idea) ? 
-                      (idea.owner.id === user?.id ? 'Your Idea' : 'Joined') : 
-                      'Join Idea'
+                    disabled={
+                      isUserParticipant(idea) || joinIdeaMutation.isPending
                     }
+                  >
+                    {joinIdeaMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {isUserParticipant(idea)
+                      ? idea.owner.id === user?.id
+                        ? "Your Idea"
+                        : "Joined"
+                      : "Join Idea"}
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     className="hover:bg-indigo-50"
                     onClick={() => handleViewDetails(idea)}
                   >
@@ -260,25 +393,36 @@ const AllIdeas = () => {
       {filteredIdeas?.length === 0 && (
         <div className="text-center py-12">
           <Lightbulb className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">No ideas found</h3>
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">
+            No ideas found
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || filterStage !== 'all' || filterTech !== 'all' 
-              ? 'Try adjusting your filters or search terms.'
-              : 'Get started by creating your first idea.'}
+            {searchTerm || filterStage !== "all" || filterTech !== "all"
+              ? "Try adjusting your filters or search terms."
+              : "Get started by creating your first idea."}
           </p>
         </div>
       )}
 
-      <IdeaCreationModal 
-        isOpen={showCreateModal} 
-        onClose={() => setShowCreateModal(false)} 
+      <IdeaCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
       />
 
       <IdeaDetailsModal
         idea={selectedIdea}
         isOpen={showDetailsModal}
         onClose={() => setShowDetailsModal(false)}
-        isOwner={selectedIdea?.owner.id === user?.id}
+        isOwner={selectedIdea && user && selectedIdea.owner.id === user.id}
+        user={user}
+        onRequestJoin={(ideaId) => requestJoinMutation.mutate(ideaId)}
+        hasRequested={
+          selectedIdea &&
+          user &&
+          selectedIdea.joinRequests?.some((req: User) => req.id === user.id)
+        }
+        onAcceptRequest={(request) => acceptJoinMutation.mutate(request)}
+        onRejectRequest={(request) => rejectJoinMutation.mutate(request)}
       />
     </div>
   );

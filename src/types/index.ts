@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -18,6 +17,7 @@ export interface Hackathon {
   stages: Stage[];
   maxParticipants?: number;
   currentParticipants: number;
+  ideas: Idea[];
 }
 
 export interface Stage {
@@ -40,7 +40,9 @@ export interface Idea {
   isLongRunning: boolean;
   participants: User[];
   requirements: Requirement[];
+  tasks: Task[];
   createdAt: string;
+  joinRequests?: User[];
 }
 
 export interface Requirement {
@@ -68,3 +70,24 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  assignee?: User;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JoinRequest {
+  id: string;
+  userId: string;
+  ideaId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done';

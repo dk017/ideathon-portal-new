@@ -1,4 +1,3 @@
-
 import { Hackathon, Idea, User } from '@/types';
 import { mockHackathons, mockIdeas, mockUsers } from '@/data/mockData';
 
@@ -133,6 +132,56 @@ export const dataService = {
     hackathons[hackathonIndex].currentParticipants += 1;
     saveToStorage(STORAGE_KEYS.hackathons, hackathons);
     
+    return true;
+  },
+
+  async requestJoinIdea(ideaId: string, userId: string): Promise<'requested' | 'already-requested' | 'already-participant' | 'not-found'> {
+    initializeStorage();
+    await delay(300);
+    const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
+    const users = getFromStorage<User>(STORAGE_KEYS.users);
+    const user = users.find(u => u.id === userId);
+    if (!user) return 'not-found';
+    const ideaIndex = ideas.findIndex(i => i.id === ideaId);
+    if (ideaIndex === -1) return 'not-found';
+    if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
+    if (ideas[ideaIndex].participants.some(p => p.id === userId)) return 'already-participant';
+    if (ideas[ideaIndex].joinRequests.some((r: any) => r.id === userId)) return 'already-requested';
+    ideas[ideaIndex].joinRequests.push(user);
+    saveToStorage(STORAGE_KEYS.ideas, ideas);
+    return 'requested';
+  },
+
+  async acceptJoinRequest(ideaId: string, userId: string): Promise<boolean> {
+    initializeStorage();
+    await delay(300);
+    const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
+    const users = getFromStorage<User>(STORAGE_KEYS.users);
+    const user = users.find(u => u.id === userId);
+    if (!user) return false;
+    const ideaIndex = ideas.findIndex(i => i.id === ideaId);
+    if (ideaIndex === -1) return false;
+    if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
+    // Remove from joinRequests
+    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: any) => r.id !== userId);
+    // Add to participants if not already
+    if (!ideas[ideaIndex].participants.some(p => p.id === userId)) {
+      ideas[ideaIndex].participants.push(user);
+    }
+    saveToStorage(STORAGE_KEYS.ideas, ideas);
+    return true;
+  },
+
+  async rejectJoinRequest(ideaId: string, userId: string): Promise<boolean> {
+    initializeStorage();
+    await delay(300);
+    const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
+    const ideaIndex = ideas.findIndex(i => i.id === ideaId);
+    if (ideaIndex === -1) return false;
+    if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
+    // Remove from joinRequests
+    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: any) => r.id !== userId);
+    saveToStorage(STORAGE_KEYS.ideas, ideas);
     return true;
   }
 };
