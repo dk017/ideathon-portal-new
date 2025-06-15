@@ -5,6 +5,10 @@ import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import UserDashboard from '@/components/dashboard/UserDashboard';
+import Hackathons from '@/pages/Hackathons';
+import AllIdeas from '@/pages/AllIdeas';
+import SkillMatrix from '@/pages/SkillMatrix';
+import Analytics from '@/pages/Analytics';
 
 const MainLayout = () => {
   const { user } = useAuth();
@@ -20,15 +24,15 @@ const MainLayout = () => {
       case 'dashboard':
         return user?.role === 'admin' ? <AdminDashboard /> : <UserDashboard />;
       case 'hackathons':
-        return <div className="p-6">Hackathons View - Coming Soon</div>;
+        return <Hackathons />;
       case 'ideas':
       case 'my-ideas':
       case 'browse-ideas':
-        return <div className="p-6">Ideas View - Coming Soon</div>;
+        return <AllIdeas />;
       case 'skill-matrix':
-        return <div className="p-6">Skill Matrix View - Coming Soon</div>;
+        return <SkillMatrix />;
       case 'analytics':
-        return <div className="p-6">Analytics View - Coming Soon</div>;
+        return <Analytics />;
       case 'users':
         return <div className="p-6">Users Management - Coming Soon</div>;
       case 'create-hackathon':
