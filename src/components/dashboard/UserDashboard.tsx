@@ -4,13 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Calendar, 
   Lightbulb, 
   Users, 
+  TrendingUp,
   Clock,
-  Trophy,
+  CheckCircle,
+  AlertCircle,
+  Award,
   Target
 } from 'lucide-react';
 import { useHackathons } from '@/hooks/useHackathons';
@@ -21,41 +23,27 @@ import ErrorMessage from '@/components/common/ErrorMessage';
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { data: hackathons, isLoading: hackathonsLoading, error: hackathonsError, refetch: refetchHackathons } = useHackathons();
-  const { data: ideas, isLoading: ideasLoading, error: ideasError, refetch: refetchIdeas } = useIdeas();
+  const { data: hackathons, isLoading: hackathonsLoading, error: hackathonsError } = useHackathons();
+  const { data: ideas, isLoading: ideasLoading, error: ideasError } = useIdeas();
 
-  const activeHackathons = hackathons?.filter(h => h.status === 'active') || [];
-  const userIdeas = ideas?.filter(i => i.owner.id === user?.id) || [];
-  const participatingIdeas = ideas?.filter(i => 
-    i.participants.some(p => p.id === user?.id) && i.owner.id !== user?.id
+  const userIdeas = ideas?.filter(idea => idea.owner.id === user?.id) || [];
+  const participatingIdeas = ideas?.filter(idea => 
+    idea.participants.some(p => p.id === user?.id) && idea.owner.id !== user?.id
   ) || [];
+  const activeHackathons = hackathons?.filter(h => h.status === 'active') || [];
 
-  const upcomingDeadlines = [
-    { event: 'AI Innovation Challenge - Planning Phase', date: '2024-07-01', type: 'deadline' },
-    { event: 'Submit final presentation', date: '2024-07-30', type: 'submission' },
-  ];
-
-  const achievements = [
-    { title: 'First Idea Submitted', description: 'Successfully submitted your first hackathon idea', earned: true },
-    { title: 'Team Player', description: 'Joined 3 different teams', earned: true },
-    { title: 'Innovation Leader', description: 'Led a team to completion', earned: false },
-  ];
-
-  // Show error if both requests failed
-  if (hackathonsError && ideasError) {
+  if (hackathonsLoading || ideasLoading) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
           <p className="text-gray-600 mt-2">Track your hackathon progress and discover new opportunities</p>
         </div>
-        <ErrorMessage 
-          message="Failed to load dashboard data" 
-          onRetry={() => {
-            refetchHackathons();
-            refetchIdeas();
-          }} 
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <LoadingCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -67,180 +55,148 @@ const UserDashboard = () => {
         <p className="text-gray-600 mt-2">Track your hackathon progress and discover new opportunities</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Ideas</CardTitle>
-            <Lightbulb className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-blue-700">My Ideas</CardTitle>
+            <Lightbulb className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            {ideasLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{userIdeas.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {userIdeas.filter(i => !i.isLongRunning).length} active
-                </p>
-              </>
-            )}
+            <div className="text-2xl font-bold text-blue-800">{userIdeas.length}</div>
+            <p className="text-xs text-blue-600">
+              {userIdeas.filter(i => !i.isLongRunning).length} active
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-100 border-purple-200 hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Participating</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-purple-700">Participating</CardTitle>
+            <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            {ideasLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{participatingIdeas.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  collaborating on ideas
-                </p>
-              </>
-            )}
+            <div className="text-2xl font-bold text-purple-800">{participatingIdeas.length}</div>
+            <p className="text-xs text-purple-600">
+              hackathon ideas
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-100 border-emerald-200 hover:shadow-lg transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-emerald-700">Active Events</CardTitle>
+            <Calendar className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            {hackathonsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{activeHackathons.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  hackathons available
-                </p>
-              </>
-            )}
+            <div className="text-2xl font-bold text-emerald-800">{activeHackathons.length}</div>
+            <p className="text-xs text-emerald-600">
+              hackathon events
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Active Hackathons */}
-      <Card>
+      <Card className="idea-card">
         <CardHeader>
-          <CardTitle>Active Hackathons</CardTitle>
-          <CardDescription>Join exciting hackathon events</CardDescription>
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-indigo-600" />
+            <span>Active Hackathons</span>
+          </CardTitle>
+          <CardDescription>Your ongoing hackathon events</CardDescription>
         </CardHeader>
         <CardContent>
-          {hackathonsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2].map((i) => (
-                <LoadingCard key={i} />
-              ))}
-            </div>
-          ) : hackathonsError ? (
-            <ErrorMessage message="Failed to load hackathons" onRetry={refetchHackathons} />
+          {hackathonsError ? (
+            <ErrorMessage message="Failed to load hackathons" />
           ) : activeHackathons.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No active hackathons at the moment.</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeHackathons.map((hackathon) => {
-                const daysLeft = Math.ceil((new Date(hackathon.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                const progress = (hackathon.currentParticipants / (hackathon.maxParticipants || 100)) * 100;
-                
-                return (
-                  <div key={hackathon.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">{hackathon.name}</h3>
-                        <p className="text-sm text-gray-600">{hackathon.description}</p>
+            <div className="space-y-4">
+              {activeHackathons.map((hackathon) => (
+                <div key={hackathon.id} className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-indigo-900">{hackathon.name}</h3>
+                    <p className="text-sm text-indigo-700">{hackathon.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 text-sm text-indigo-600">
+                        <div className="flex items-center">
+                          <Clock className="mr-1 h-4 w-4" />
+                          <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">
+                            {Math.max(0, Math.ceil((new Date(hackathon.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} days left
+                          </Badge>
+                        </div>
+                        <span>{hackathon.currentParticipants} participants</span>
                       </div>
-                      
-                      <div className="flex items-center justify-between text-sm">
-                        <Badge variant={daysLeft > 7 ? "secondary" : "destructive"}>
-                          <Clock className="w-3 h-3 mr-1" />
-                          {daysLeft} days left
-                        </Badge>
-                        <span className="text-gray-500">
-                          {hackathon.currentParticipants} participants
-                        </span>
-                      </div>
-                      
-                      <Progress value={progress} className="h-2" />
-                      
                       <div className="flex space-x-2">
-                        <Button size="sm" className="flex-1">Join Event</Button>
-                        <Button variant="outline" size="sm">Learn More</Button>
+                        <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                          Join Event
+                        </Button>
+                        <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700">
+                          Learn More
+                        </Button>
                       </div>
                     </div>
+                    <Progress value={(hackathon.currentParticipants / hackathon.maxParticipants) * 100} className="h-2" />
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Deadlines */}
-        <Card>
+        <Card className="idea-card">
           <CardHeader>
-            <CardTitle>Upcoming Deadlines</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              <span>Upcoming Deadlines</span>
+            </CardTitle>
             <CardDescription>Don't miss important dates</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {upcomingDeadlines.map((deadline, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
-                  <Target className="h-5 w-5 text-orange-500" />
-                  <div className="flex-1">
-                    <p className="font-medium">{deadline.event}</p>
-                    <p className="text-sm text-gray-600">Due: {new Date(deadline.date).toLocaleDateString()}</p>
-                  </div>
-                  <Badge variant={deadline.type === 'deadline' ? 'destructive' : 'secondary'}>
-                    {deadline.type}
-                  </Badge>
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                <div>
+                  <p className="font-medium text-orange-900">AI Innovation Challenge - Planning Phase</p>
+                  <p className="text-sm text-orange-700">Submit your project plan</p>
                 </div>
-              ))}
+                <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                  deadline
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Achievements */}
-        <Card>
+        <Card className="idea-card">
           <CardHeader>
-            <CardTitle>Achievements</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <Award className="h-5 w-5 text-emerald-500" />
+              <span>Achievements</span>
+            </CardTitle>
             <CardDescription>Your hackathon milestones</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {achievements.map((achievement, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
-                  <Trophy className={`h-5 w-5 ${achievement.earned ? 'text-yellow-500' : 'text-gray-400'}`} />
-                  <div className="flex-1">
-                    <p className={`font-medium ${achievement.earned ? 'text-gray-900' : 'text-gray-500'}`}>
-                      {achievement.title}
-                    </p>
-                    <p className="text-sm text-gray-600">{achievement.description}</p>
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-emerald-100 rounded-full">
+                    <Target className="h-4 w-4 text-emerald-600" />
                   </div>
-                  {achievement.earned ? (
-                    <Badge className="bg-green-100 text-green-700">Earned</Badge>
-                  ) : (
-                    <Badge variant="outline">Locked</Badge>
-                  )}
+                  <div>
+                    <p className="font-medium text-emerald-900">First Idea Submitted</p>
+                    <p className="text-sm text-emerald-700">Successfully submitted your first hackathon idea</p>
+                  </div>
                 </div>
-              ))}
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+                  Earned
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>

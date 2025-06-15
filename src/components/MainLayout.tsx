@@ -28,6 +28,7 @@ const MainLayout = () => {
         return <Hackathons />;
       case 'ideas':
       case 'browse-ideas':
+      case 'all-ideas':
         return <AllIdeas />;
       case 'my-ideas':
         return <MyIdeas />;
