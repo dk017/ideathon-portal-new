@@ -1,9 +1,8 @@
-
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Bell, User, Settings, LogOut, Menu, X } from 'lucide-react';
+import React, { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Bell, User, Settings, LogOut, Menu, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { mockNotifications } from '@/data/mockData';
+} from "@/components/ui/dropdown-menu";
+import { mockNotifications } from "@/data/mockData";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -21,8 +20,10 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isMobileMenuOpen }) => {
   const { user, logout } = useAuth();
-  const [notifications] = useState(mockNotifications.filter(n => n.userId === user?.id));
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const [notifications] = useState(
+    mockNotifications.filter((n) => n.userId === user?.id)
+  );
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <nav className="bg-white border-b border-gray-200 shadow-sm">
@@ -42,7 +43,9 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isMobileMenuOpen }) => {
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Hackathon Platform</h1>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Ideathon Portal
+                </h1>
               </div>
             </div>
           </div>
@@ -65,13 +68,23 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isMobileMenuOpen }) => {
                 <DropdownMenuSeparator />
                 {notifications.length > 0 ? (
                   notifications.slice(0, 5).map((notification) => (
-                    <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-3">
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className="flex flex-col items-start p-3"
+                    >
                       <div className="flex items-center justify-between w-full">
-                        <Badge variant={notification.isRead ? "secondary" : "default"} className="text-xs">
-                          {notification.type.replace('_', ' ')}
+                        <Badge
+                          variant={
+                            notification.isRead ? "secondary" : "default"
+                          }
+                          className="text-xs"
+                        >
+                          {notification.type.replace("_", " ")}
                         </Badge>
                         <span className="text-xs text-gray-500">
-                          {new Date(notification.createdAt).toLocaleDateString()}
+                          {new Date(
+                            notification.createdAt
+                          ).toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-sm mt-1">{notification.message}</p>
@@ -86,13 +99,24 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, isMobileMenuOpen }) => {
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-sm">{user?.avatar || <User size={16} />}</span>
+                    <span className="text-sm">
+                      {user?.avatar || <User size={16} />}
+                    </span>
                   </div>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                    <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.name}
+                    </p>
+                    <Badge
+                      variant={user?.role === "admin" ? "default" : "secondary"}
+                      className="text-xs"
+                    >
                       {user?.role}
                     </Badge>
                   </div>

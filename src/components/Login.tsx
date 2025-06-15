@@ -37,10 +37,10 @@ const Login = () => {
             <span className="text-white text-2xl font-bold">H</span>
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">
-            Hackathon Platform
+            Ideathon Portal
           </CardTitle>
           <CardDescription>
-            Access your hackathon management dashboard
+            Access your ideathon management dashboard
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

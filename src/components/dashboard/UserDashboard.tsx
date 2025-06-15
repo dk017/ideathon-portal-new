@@ -20,7 +20,7 @@ import {
   Award,
   Target,
 } from "lucide-react";
-import { useHackathons } from "@/hooks/useHackathons";
+import { useEvents } from "@/hooks/useEvents";
 import { useIdeas } from "@/hooks/useIdeas";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingCard from "@/components/common/LoadingCard";
@@ -29,10 +29,10 @@ import ErrorMessage from "@/components/common/ErrorMessage";
 const UserDashboard = () => {
   const { user } = useAuth();
   const {
-    data: hackathons,
-    isLoading: hackathonsLoading,
-    error: hackathonsError,
-  } = useHackathons();
+    data: events,
+    isLoading: eventsLoading,
+    error: eventsError,
+  } = useEvents();
   const {
     data: ideas,
     isLoading: ideasLoading,
@@ -46,10 +46,9 @@ const UserDashboard = () => {
         idea.participants.some((p) => p.id === user?.id) &&
         idea.owner.id !== user?.id
     ) || [];
-  const activeHackathons =
-    hackathons?.filter((h) => h.status === "active") || [];
+  const activeEvents = events?.filter((h) => h.status === "active") || [];
 
-  if (hackathonsLoading || ideasLoading) {
+  if (eventsLoading || ideasLoading) {
     return (
       <div className="space-y-6">
         <div>
@@ -57,7 +56,7 @@ const UserDashboard = () => {
             Welcome back, {user?.name}!
           </h1>
           <p className="text-muted-foreground mt-2">
-            Track your hackathon progress and discover new opportunities
+            Track your event progress and discover new opportunities
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,7 +75,7 @@ const UserDashboard = () => {
           Welcome back, {user?.name}!
         </h1>
         <p className="text-gray-600 mt-2">
-          Track your hackathon progress and discover new opportunities
+          Track your event progress and discover new opportunities
         </p>
       </div>
 
@@ -110,7 +109,7 @@ const UserDashboard = () => {
             <div className="text-2xl font-bold text-purple-800">
               {participatingIdeas.length}
             </div>
-            <p className="text-xs text-purple-600">hackathon ideas</p>
+            <p className="text-xs text-purple-600">event ideas</p>
           </CardContent>
         </Card>
 
@@ -123,9 +122,9 @@ const UserDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-800">
-              {activeHackathons.length}
+              {activeEvents.length}
             </div>
-            <p className="text-xs text-emerald-600">hackathon events</p>
+            <p className="text-xs text-emerald-600">event events</p>
           </CardContent>
         </Card>
       </div>
@@ -135,30 +134,30 @@ const UserDashboard = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5 text-indigo-600" />
-            <span>Active Hackathons</span>
+            <span>Active Events</span>
           </CardTitle>
-          <CardDescription>Your ongoing hackathon events</CardDescription>
+          <CardDescription>Your ongoing event events</CardDescription>
         </CardHeader>
         <CardContent>
-          {hackathonsError ? (
-            <ErrorMessage message="Failed to load hackathons" />
-          ) : activeHackathons.length === 0 ? (
+          {eventsError ? (
+            <ErrorMessage message="Failed to load events" />
+          ) : activeEvents.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              No active hackathons at the moment.
+              No active events at the moment.
             </p>
           ) : (
             <div className="space-y-4">
-              {activeHackathons.map((hackathon) => (
+              {activeEvents.map((event) => (
                 <div
-                  key={hackathon.id}
+                  key={event.id}
                   className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-200"
                 >
                   <div className="space-y-2">
                     <h3 className="font-semibold text-indigo-900">
-                      {hackathon.name}
+                      {event.name}
                     </h3>
                     <p className="text-sm text-indigo-700">
-                      {hackathon.description}
+                      {event.description}
                     </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 text-sm text-indigo-600">
@@ -168,7 +167,7 @@ const UserDashboard = () => {
                             {Math.max(
                               0,
                               Math.ceil(
-                                (new Date(hackathon.endDate).getTime() -
+                                (new Date(event.endDate).getTime() -
                                   new Date().getTime()) /
                                   (1000 * 60 * 60 * 24)
                               )
@@ -176,9 +175,7 @@ const UserDashboard = () => {
                             days left
                           </Badge>
                         </div>
-                        <span>
-                          {hackathon.currentParticipants} participants
-                        </span>
+                        <span>{event.currentParticipants} participants</span>
                       </div>
                       <div className="flex space-x-2">
                         <Button
@@ -198,8 +195,7 @@ const UserDashboard = () => {
                     </div>
                     <Progress
                       value={
-                        (hackathon.currentParticipants /
-                          hackathon.maxParticipants) *
+                        (event.currentParticipants / event.maxParticipants) *
                         100
                       }
                       className="h-2"
@@ -249,7 +245,7 @@ const UserDashboard = () => {
               <Award className="h-5 w-5 text-emerald-500" />
               <span>Achievements</span>
             </CardTitle>
-            <CardDescription>Your hackathon milestones</CardDescription>
+            <CardDescription>Your event milestones</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -263,7 +259,7 @@ const UserDashboard = () => {
                       First Idea Submitted
                     </p>
                     <p className="text-sm text-emerald-700">
-                      Successfully submitted your first hackathon idea
+                      Successfully submitted your first event idea
                     </p>
                   </div>
                 </div>

@@ -6,8 +6,6 @@ import {
   Home,
   Calendar,
   Lightbulb,
-  Users,
-  Settings,
   Plus,
   BarChart3,
   Search,
@@ -19,27 +17,28 @@ interface SidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
   isOpen: boolean;
+  onCreateEvent?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   activeView,
   onViewChange,
   isOpen,
+  onCreateEvent,
 }) => {
   const { user } = useAuth();
 
   const adminMenuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "hackathons", label: "Hackathons", icon: Calendar },
+    { id: "events", label: "Events", icon: Calendar },
     { id: "all-ideas", label: "All Ideas", icon: Lightbulb },
     { id: "skill-matrix", label: "Skill Matrix", icon: Search },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "users", label: "Users", icon: Users },
   ];
 
   const userMenuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "hackathons", label: "Hackathons", icon: Calendar },
+    { id: "events", label: "Events", icon: Calendar },
     { id: "my-ideas", label: "My Ideas", icon: Lightbulb },
     { id: "all-ideas", label: "Browse Ideas", icon: Sparkles },
   ];
@@ -56,14 +55,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className={cn("p-4 space-y-2", !isOpen && "md:px-2")}>
         {user?.role === "admin" && (
           <Button
-            onClick={() => onViewChange("create-hackathon")}
+            onClick={onCreateEvent}
             className={cn(
               "w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground",
               !isOpen && "md:w-12 md:h-12 md:p-0"
             )}
           >
             <Plus size={20} />
-            {isOpen && <span className="ml-2">Create Hackathon</span>}
+            {isOpen && <span className="ml-2">Create Event</span>}
           </Button>
         )}
 
@@ -89,27 +88,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             );
           })}
         </div>
-
-        {isOpen && (
-          <div className="pt-4 border-t border-border">
-            <div className="flex items-center space-x-3 p-2 rounded-lg bg-muted">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <span className="text-sm text-primary">{user?.avatar}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {user?.name}
-                </p>
-                <Badge
-                  variant={user?.role === "admin" ? "default" : "secondary"}
-                  className="text-xs"
-                >
-                  {user?.role}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

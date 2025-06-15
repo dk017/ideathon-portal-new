@@ -1,14 +1,14 @@
-import { Hackathon, Idea, User } from '@/types';
-import { mockHackathons, mockIdeas, mockUsers } from '@/data/mockData';
+import { Event, Idea, JoinRequest, User } from '@/types';
+import { mockEvents as mockEvents, mockIdeas, mockUsers } from '@/data/mockData';
 
 // Simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // localStorage keys
 const STORAGE_KEYS = {
-  ideas: 'hackathon_ideas',
-  hackathons: 'hackathon_events',
-  users: 'hackathon_users'
+  ideas: 'event_ideas',
+  events: 'event_events',
+  users: 'event_users'
 };
 
 // Initialize localStorage with mock data if empty
@@ -16,8 +16,8 @@ const initializeStorage = () => {
   if (!localStorage.getItem(STORAGE_KEYS.ideas)) {
     localStorage.setItem(STORAGE_KEYS.ideas, JSON.stringify(mockIdeas));
   }
-  if (!localStorage.getItem(STORAGE_KEYS.hackathons)) {
-    localStorage.setItem(STORAGE_KEYS.hackathons, JSON.stringify(mockHackathons));
+  if (!localStorage.getItem(STORAGE_KEYS.events)) {
+    localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(mockEvents));
   }
   if (!localStorage.getItem(STORAGE_KEYS.users)) {
     localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(mockUsers));
@@ -39,10 +39,17 @@ const saveToStorage = <T>(key: string, data: T[]) => {
 };
 
 export const dataService = {
-  async getHackathons(): Promise<Hackathon[]> {
+  async getEvents(): Promise<Event[]> {
     initializeStorage();
     await delay(800);
-    return getFromStorage<Hackathon>(STORAGE_KEYS.hackathons);
+    return getFromStorage<Event>(STORAGE_KEYS.events);
+  },
+
+  async getEventById(id: string): Promise<Event | null> {
+    initializeStorage();
+    await delay(300);
+    const events = getFromStorage<Event>(STORAGE_KEYS.events);
+    return events.find(e => e.id === id) || null;
   },
 
   async getIdeas(): Promise<Idea[]> {
@@ -57,18 +64,11 @@ export const dataService = {
     return getFromStorage<User>(STORAGE_KEYS.users);
   },
 
-  async getHackathonById(id: string): Promise<Hackathon | null> {
-    initializeStorage();
-    await delay(300);
-    const hackathons = getFromStorage<Hackathon>(STORAGE_KEYS.hackathons);
-    return hackathons.find(h => h.id === id) || null;
-  },
-
-  async getIdeasByHackathon(hackathonId: string): Promise<Idea[]> {
+  async getIdeasByEvent(eventId: string): Promise<Idea[]> {
     initializeStorage();
     await delay(500);
     const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
-    return ideas.filter(idea => idea.hackathonId === hackathonId);
+    return ideas.filter(idea => idea.eventId === eventId);
   },
 
   async getUserIdeas(userId: string): Promise<Idea[]> {
@@ -81,7 +81,7 @@ export const dataService = {
   async createIdea(ideaData: Omit<Idea, 'id' | 'referenceNumber' | 'createdAt'>): Promise<Idea> {
     initializeStorage();
     await delay(500);
-    
+
     const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
     const newIdea: Idea = {
       ...ideaData,
@@ -89,49 +89,49 @@ export const dataService = {
       referenceNumber: `REF-${Date.now().toString().slice(-6)}`,
       createdAt: new Date().toISOString()
     };
-    
+
     const updatedIdeas = [...ideas, newIdea];
     saveToStorage(STORAGE_KEYS.ideas, updatedIdeas);
-    
+
     return newIdea;
   },
 
   async joinIdea(ideaId: string, userId: string): Promise<boolean> {
     initializeStorage();
     await delay(300);
-    
+
     const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
     const users = getFromStorage<User>(STORAGE_KEYS.users);
     const user = users.find(u => u.id === userId);
-    
+
     if (!user) return false;
-    
+
     const ideaIndex = ideas.findIndex(i => i.id === ideaId);
     if (ideaIndex === -1) return false;
-    
+
     // Check if user is already a participant
     if (ideas[ideaIndex].participants.some(p => p.id === userId)) {
       return false;
     }
-    
+
     ideas[ideaIndex].participants.push(user);
     saveToStorage(STORAGE_KEYS.ideas, ideas);
-    
+
     return true;
   },
 
-  async joinHackathon(hackathonId: string, userId: string): Promise<boolean> {
+  async joinEvent(eventId: string, userId: string): Promise<boolean> {
     initializeStorage();
     await delay(300);
-    
-    const hackathons = getFromStorage<Hackathon>(STORAGE_KEYS.hackathons);
-    const hackathonIndex = hackathons.findIndex(h => h.id === hackathonId);
-    
-    if (hackathonIndex === -1) return false;
-    
-    hackathons[hackathonIndex].currentParticipants += 1;
-    saveToStorage(STORAGE_KEYS.hackathons, hackathons);
-    
+
+    const events = getFromStorage<Event>(STORAGE_KEYS.events);
+    const eventIndex = events.findIndex(e => e.id === eventId);
+
+    if (eventIndex === -1) return false;
+
+    events[eventIndex].currentParticipants += 1;
+    saveToStorage(STORAGE_KEYS.events, events);
+
     return true;
   },
 
@@ -146,7 +146,7 @@ export const dataService = {
     if (ideaIndex === -1) return 'not-found';
     if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
     if (ideas[ideaIndex].participants.some(p => p.id === userId)) return 'already-participant';
-    if (ideas[ideaIndex].joinRequests.some((r: any) => r.id === userId)) return 'already-requested';
+    if (ideas[ideaIndex].joinRequests.some((r: User) => r.id === userId)) return 'already-requested';
     ideas[ideaIndex].joinRequests.push(user);
     saveToStorage(STORAGE_KEYS.ideas, ideas);
     return 'requested';
@@ -163,7 +163,7 @@ export const dataService = {
     if (ideaIndex === -1) return false;
     if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
     // Remove from joinRequests
-    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: any) => r.id !== userId);
+    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: User) => r.id !== userId);
     // Add to participants if not already
     if (!ideas[ideaIndex].participants.some(p => p.id === userId)) {
       ideas[ideaIndex].participants.push(user);
@@ -180,8 +180,34 @@ export const dataService = {
     if (ideaIndex === -1) return false;
     if (!ideas[ideaIndex].joinRequests) ideas[ideaIndex].joinRequests = [];
     // Remove from joinRequests
-    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: any) => r.id !== userId);
+    ideas[ideaIndex].joinRequests = ideas[ideaIndex].joinRequests.filter((r: User) => r.id !== userId);
     saveToStorage(STORAGE_KEYS.ideas, ideas);
     return true;
+  },
+
+  async createEvent(eventData: Omit<Event, 'id' | 'ideas' | 'currentParticipants'>): Promise<Event> {
+    initializeStorage();
+    await delay(500);
+    const events = getFromStorage<Event>(STORAGE_KEYS.events);
+    const newEvent: Event = {
+      ...eventData,
+      id: `event-${Date.now()}`,
+      ideas: [],
+      currentParticipants: 0,
+    };
+    const updatedEvents = [...events, newEvent];
+    saveToStorage(STORAGE_KEYS.events, updatedEvents);
+    return newEvent;
+  },
+
+  async updateIdea(updatedIdea: Idea): Promise<Idea> {
+    initializeStorage();
+    await delay(400);
+    const ideas = getFromStorage<Idea>(STORAGE_KEYS.ideas);
+    const idx = ideas.findIndex(i => i.id === updatedIdea.id);
+    if (idx === -1) throw new Error('Idea not found');
+    ideas[idx] = { ...ideas[idx], ...updatedIdea };
+    saveToStorage(STORAGE_KEYS.ideas, ideas);
+    return ideas[idx];
   }
 };

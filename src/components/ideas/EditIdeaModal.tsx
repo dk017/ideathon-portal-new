@@ -1,9 +1,4 @@
-import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEvents } from "@/hooks/useEvents";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { dataService } from "@/services/dataService";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,114 +7,88 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { X, Plus, Loader2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { dataService } from "@/services/dataService";
+import { useToast } from "@/hooks/use-toast";
+import { Idea } from "@/types";
 
-interface IdeaCreationModalProps {
+interface EditIdeaModalProps {
   isOpen: boolean;
   onClose: () => void;
+  idea: Idea | null;
+  onSuccess: () => void;
 }
 
-type RequirementForm = { skill: string; description: string };
-type IdeaFormData = {
-  title: string;
-  description: string;
-  eventId: string;
-  techStack: string[];
-  isLongRunning: boolean;
-  requirements: RequirementForm[];
-};
-
-const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
+const EditIdeaModal: React.FC<EditIdeaModalProps> = ({
   isOpen,
   onClose,
+  idea,
+  onSuccess,
 }) => {
-  const { user } = useAuth();
-  const { data: events } = useEvents();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const [formData, setFormData] = useState<IdeaFormData>({
+  const [formData, setFormData] = useState({
     title: "",
     description: "",
-    eventId: "",
-    techStack: [],
-    isLongRunning: false,
-    requirements: [],
+    techStack: [] as string[],
+    requirements: [] as { skill: string; description: string }[],
   });
-
   const [newTech, setNewTech] = useState("");
   const [newRequirement, setNewRequirement] = useState({
     skill: "",
     description: "",
   });
 
-  const createIdeaMutation = useMutation({
-    mutationFn: async (ideaData: IdeaFormData) => {
-      if (!user) throw new Error("User not authenticated");
+  useEffect(() => {
+    if (idea) {
+      setFormData({
+        title: idea.title,
+        description: idea.description,
+        techStack: idea.techStack,
+        requirements: idea.requirements.map((r) => ({
+          skill: r.skill,
+          description: r.description,
+        })),
+      });
+    }
+  }, [idea]);
 
-      return dataService.createIdea({
-        ...ideaData,
-        eventId: ideaData.eventId,
-        owner: user,
-        participants: [],
-        currentStage: 1,
-        requirements: ideaData.requirements.map((req, index) => ({
-          id: `req-${Date.now()}-${index}`,
+  const editIdeaMutation = useMutation({
+    mutationFn: async (updated: typeof formData) => {
+      if (!idea) throw new Error("No idea selected");
+      return dataService.updateIdea({
+        ...idea,
+        title: updated.title,
+        description: updated.description,
+        techStack: updated.techStack,
+        requirements: updated.requirements.map((req, idx) => ({
+          ...idea.requirements[idx],
           skill: req.skill,
           description: req.description,
-          isOpen: true,
-          responses: [],
         })),
-        tasks: [],
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ideas"] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      toast({
-        title: "Success",
-        description: "Your idea has been created successfully!",
-      });
+      toast({ title: "Success", description: "Idea updated successfully!" });
       onClose();
-      resetForm();
+      onSuccess();
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create idea. Please try again.",
+        description: "Failed to update idea.",
         variant: "destructive",
       });
-      console.error("Failed to create idea:", error);
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      description: "",
-      eventId: "",
-      techStack: [],
-      isLongRunning: false,
-      requirements: [],
-    });
-    setNewTech("");
-    setNewRequirement({ skill: "", description: "" });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createIdeaMutation.mutate(formData);
+    editIdeaMutation.mutate(formData);
   };
 
   const addTechStack = () => {
@@ -156,54 +125,30 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
     }));
   };
 
+  if (!idea) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Idea</DialogTitle>
+          <DialogTitle>Edit Idea</DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Idea Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
-                placeholder="Enter your idea title"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="event">Event *</Label>
-              <Select
-                value={formData.eventId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, eventId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select hackathon" />
-                </SelectTrigger>
-                <SelectContent>
-                  {events?.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
-                      {event.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <label className="block text-sm font-medium mb-1">Title *</label>
+            <Input
+              value={formData.title}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium mb-1">
+              Description *
+            </label>
             <Textarea
-              id="description"
               value={formData.description}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -211,14 +156,14 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
                   description: e.target.value,
                 }))
               }
-              placeholder="Describe your idea in detail..."
-              rows={4}
               required
+              rows={4}
             />
           </div>
-
           <div className="space-y-2">
-            <Label>Technology Stack</Label>
+            <label className="block text-sm font-medium mb-1">
+              Technology Stack
+            </label>
             <div className="flex space-x-2">
               <Input
                 value={newTech}
@@ -250,9 +195,10 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
               </div>
             )}
           </div>
-
           <div className="space-y-4">
-            <Label>Team Requirements (Optional)</Label>
+            <label className="block text-sm font-medium mb-1">
+              Team Requirements
+            </label>
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <Input
@@ -285,7 +231,6 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
                 Add Requirement
               </Button>
             </div>
-
             {formData.requirements.length > 0 && (
               <div className="space-y-2">
                 {formData.requirements.map((req, index) => (
@@ -310,37 +255,15 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
               </div>
             )}
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="longRunning"
-              checked={formData.isLongRunning}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, isLongRunning: checked }))
-              }
-            />
-            <Label htmlFor="longRunning">
-              Long-running project (extends beyond hackathon)
-            </Label>
-          </div>
-
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={
-                !formData.title ||
-                !formData.description ||
-                !formData.eventId ||
-                createIdeaMutation.isPending
-              }
-            >
-              {createIdeaMutation.isPending && (
+            <Button type="submit" disabled={editIdeaMutation.isPending}>
+              {editIdeaMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create Idea
+              Save Changes
             </Button>
           </div>
         </form>
@@ -349,4 +272,4 @@ const IdeaCreationModal: React.FC<IdeaCreationModalProps> = ({
   );
 };
 
-export default IdeaCreationModal;
+export default EditIdeaModal;

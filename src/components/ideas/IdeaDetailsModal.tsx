@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,18 +8,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Lightbulb, Users, Calendar, Code, User, X, Plus } from "lucide-react";
-import { User as UserType, Idea, Task, TaskStatus, Requirement } from "@/types";
-import KanbanBoard from "./KanbanBoard";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Lightbulb, Users, Code, User } from "lucide-react";
+import { User as UserType, Idea, Requirement } from "@/types";
 
 interface IdeaDetailsModalProps {
   idea: Idea;
@@ -31,6 +21,7 @@ interface IdeaDetailsModalProps {
   hasRequested: boolean;
   onAcceptRequest: (request: { ideaId: string; userId: string }) => void;
   onRejectRequest: (request: { ideaId: string; userId: string }) => void;
+  onEdit?: () => void;
 }
 
 const IdeaDetailsModal = ({
@@ -43,15 +34,8 @@ const IdeaDetailsModal = ({
   hasRequested,
   onAcceptRequest,
   onRejectRequest,
+  onEdit,
 }: IdeaDetailsModalProps) => {
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    status: "todo" as TaskStatus,
-  });
-  const [tasks, setTasks] = useState<Task[]>(idea?.tasks || []);
-
   if (!idea) return null;
 
   const getStageColor = (stage: number) => {
@@ -74,23 +58,6 @@ const IdeaDetailsModal = ({
       "Presentation",
     ];
     return stages[stage - 1] || "Unknown";
-  };
-
-  const handleAddTask = () => {
-    if (!newTask.title.trim()) return;
-    setTasks((prev) => [
-      ...prev,
-      {
-        id: `task-${Date.now()}`,
-        title: newTask.title,
-        description: newTask.description,
-        status: newTask.status,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ]);
-    setNewTask({ title: "", description: "", status: "todo" });
-    setShowAddTask(false);
   };
 
   return (
@@ -303,7 +270,10 @@ const IdeaDetailsModal = ({
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">
             {isOwner ? (
-              <Button className="gradient-button text-white flex-1">
+              <Button
+                className="gradient-button text-white flex-1"
+                onClick={onEdit}
+              >
                 Edit Idea
               </Button>
             ) : hasRequested ? (
@@ -322,73 +292,6 @@ const IdeaDetailsModal = ({
               Close
             </Button>
           </div>
-
-          <div className="mb-4 flex items-center justify-between">
-            <span className="font-semibold">Kanban Board</span>
-            <button
-              type="button"
-              className="flex items-center px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={() => setShowAddTask((v) => !v)}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Add Task
-            </button>
-          </div>
-          {showAddTask && (
-            <div className="mb-4 p-4 bg-gray-100 rounded">
-              <div className="flex flex-col md:flex-row gap-2 mb-2">
-                <Input
-                  value={newTask.title}
-                  onChange={(e) =>
-                    setNewTask((t) => ({ ...t, title: e.target.value }))
-                  }
-                  placeholder="Task title"
-                  className="flex-1"
-                />
-                <Select
-                  value={newTask.status}
-                  onValueChange={(v) =>
-                    setNewTask((t) => ({ ...t, status: v as TaskStatus }))
-                  }
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todo">Not Started</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="review">Review</SelectItem>
-                    <SelectItem value="done">Done</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Textarea
-                value={newTask.description}
-                onChange={(e) =>
-                  setNewTask((t) => ({ ...t, description: e.target.value }))
-                }
-                placeholder="Task description"
-                rows={2}
-                className="mb-2"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  onClick={handleAddTask}
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                  onClick={() => setShowAddTask(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-          <KanbanBoard tasks={tasks} ideaId={idea.id} />
         </div>
       </DialogContent>
     </Dialog>

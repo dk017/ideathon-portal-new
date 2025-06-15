@@ -19,7 +19,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { useHackathons } from "@/hooks/useHackathons";
+import { useEvents } from "@/hooks/useEvents";
 import { useIdeas } from "@/hooks/useIdeas";
 import { mockUsers } from "@/data/mockData";
 import LoadingCard from "@/components/common/LoadingCard";
@@ -27,11 +27,11 @@ import ErrorMessage from "@/components/common/ErrorMessage";
 
 const AdminDashboard = () => {
   const {
-    data: hackathons,
-    isLoading: hackathonsLoading,
-    error: hackathonsError,
-    refetch: refetchHackathons,
-  } = useHackathons();
+    data: events,
+    isLoading: eventsLoading,
+    error: eventsError,
+    refetch: refetchEvents,
+  } = useEvents();
   const {
     data: ideas,
     isLoading: ideasLoading,
@@ -39,8 +39,7 @@ const AdminDashboard = () => {
     refetch: refetchIdeas,
   } = useIdeas();
 
-  const activeHackathons =
-    hackathons?.filter((h) => h.status === "active") || [];
+  const activeEvents = events?.filter((h) => h.status === "active") || [];
   const totalIdeas = ideas?.length || 0;
   const totalUsers = mockUsers.filter((u) => u.role === "user").length;
   const completionRate = 75; // Mock completion rate
@@ -55,10 +54,10 @@ const AdminDashboard = () => {
     },
     {
       id: 2,
-      action: "Hackathon created",
+      action: "Event created",
       details: "AI Innovation Challenge 2024",
       time: "1 day ago",
-      type: "hackathon",
+      type: "event",
     },
     {
       id: 3,
@@ -80,7 +79,7 @@ const AdminDashboard = () => {
     switch (type) {
       case "idea":
         return <Lightbulb className="h-4 w-4 text-yellow-500" />;
-      case "hackathon":
+      case "event":
         return <Calendar className="h-4 w-4 text-blue-500" />;
       case "user":
         return <Users className="h-4 w-4 text-green-500" />;
@@ -92,7 +91,7 @@ const AdminDashboard = () => {
   };
 
   // Show error if both requests failed
-  if (hackathonsError && ideasError) {
+  if (eventsError && ideasError) {
     return (
       <div className="space-y-6">
         <div>
@@ -100,13 +99,13 @@ const AdminDashboard = () => {
             Admin Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage hackathons, ideas, and participants
+            Manage events, ideas, and participants
           </p>
         </div>
         <ErrorMessage
           message="Failed to load dashboard data"
           onRetry={() => {
-            refetchHackathons();
+            refetchEvents();
             refetchIdeas();
           }}
         />
@@ -119,7 +118,7 @@ const AdminDashboard = () => {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-2">
-          Manage hackathons, ideas, and participants
+          Manage events, ideas, and participants
         </p>
       </div>
 
@@ -127,25 +126,20 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Hackathons
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {hackathonsLoading ? (
+            {eventsLoading ? (
               <div className="space-y-2">
                 <Skeleton className="h-8 w-12" />
                 <Skeleton className="h-4 w-20" />
               </div>
             ) : (
               <>
-                <div className="text-2xl font-bold">
-                  {activeHackathons.length}
-                </div>
+                <div className="text-2xl font-bold">{activeEvents.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  {hackathons?.filter((h) => h.status === "upcoming").length ||
-                    0}{" "}
+                  {events?.filter((h) => h.status === "upcoming").length || 0}{" "}
                   upcoming
                 </p>
               </>
@@ -206,11 +200,11 @@ const AdminDashboard = () => {
       {/* Active Hackathons */}
       <Card>
         <CardHeader>
-          <CardTitle>Active Hackathons</CardTitle>
-          <CardDescription>Currently running hackathon events</CardDescription>
+          <CardTitle>Active Events</CardTitle>
+          <CardDescription>Currently running events</CardDescription>
         </CardHeader>
         <CardContent>
-          {hackathonsLoading ? (
+          {eventsLoading ? (
             <div className="space-y-4">
               {[1, 2].map((i) => (
                 <div key={i} className="p-4 border border-gray-200 rounded-lg">
@@ -228,36 +222,36 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
-          ) : hackathonsError ? (
+          ) : eventsError ? (
             <ErrorMessage
-              message="Failed to load hackathons"
-              onRetry={refetchHackathons}
+              message="Failed to load events"
+              onRetry={refetchEvents}
             />
-          ) : activeHackathons.length === 0 ? (
+          ) : activeEvents.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              No active hackathons at the moment.
+              No active events at the moment.
             </p>
           ) : (
             <div className="space-y-4">
-              {activeHackathons.map((hackathon) => (
+              {activeEvents.map((event) => (
                 <div
-                  key={hackathon.id}
+                  key={event.id}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                 >
                   <div className="space-y-1">
                     <h3 className="font-semibold text-foreground">
-                      {hackathon.name}
+                      {event.name}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {hackathon.description}
+                      {event.description}
                     </p>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                       <span>
-                        Ends: {new Date(hackathon.endDate).toLocaleDateString()}
+                        Ends: {new Date(event.endDate).toLocaleDateString()}
                       </span>
                       <Badge variant="secondary">
-                        {hackathon.currentParticipants}/
-                        {hackathon.maxParticipants} participants
+                        {event.currentParticipants}/{event.maxParticipants}{" "}
+                        participants
                       </Badge>
                     </div>
                   </div>

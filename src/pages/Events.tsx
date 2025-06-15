@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHackathons, useHackathon } from "@/hooks/useHackathons";
+import { useEvents, useEvent } from "@/hooks/useEvents";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { dataService } from "@/services/dataService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,9 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Clock, Trophy, Loader2, X } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Clock,
+  Trophy,
+  Loader2,
+  X,
+  Lightbulb,
+} from "lucide-react";
 import LoadingCard from "@/components/common/LoadingCard";
 import ErrorMessage from "@/components/common/ErrorMessage";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -25,36 +34,38 @@ import {
   DialogTitle as IdeaDialogTitle,
 } from "@/components/ui/dialog";
 import { Idea } from "@/types";
+import EventCreationModal from "@/components/events/EventCreationModal";
 
-const Hackathons = () => {
-  const [selectedHackathonId, setSelectedHackathonId] = useState<string | null>(
-    null
+const Events = () => {
+  const navigate = useNavigate();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { data: events, isLoading, error } = useEvents();
+  const { data: selectedEvent, isLoading: isLoadingSelected } = useEvent(
+    selectedEventId || ""
   );
-  const { data: hackathons, isLoading, error } = useHackathons();
-  const { data: selectedHackathon, isLoading: isLoadingSelected } =
-    useHackathon(selectedHackathonId || "");
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const joinHackathonMutation = useMutation({
-    mutationFn: async (hackathonId: string) => {
+  const joinEventMutation = useMutation({
+    mutationFn: async (eventId: string) => {
       if (!user) throw new Error("User not authenticated");
-      return dataService.joinHackathon(hackathonId, user.id);
+      return dataService.joinEvent(eventId, user.id);
     },
     onSuccess: (success) => {
       if (success) {
-        queryClient.invalidateQueries({ queryKey: ["hackathons"] });
+        queryClient.invalidateQueries({ queryKey: ["events"] });
         toast({
           title: "Success",
-          description: "You have successfully joined the hackathon!",
+          description: "You have successfully joined the event!",
         });
       } else {
         toast({
           title: "Unable to join",
           description:
-            "The hackathon may be full or you may already be registered.",
+            "The event may be full or you may already be registered.",
           variant: "destructive",
         });
       }
@@ -62,17 +73,17 @@ const Hackathons = () => {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to join hackathon. Please try again.",
+        description: "Failed to join event. Please try again.",
         variant: "destructive",
       });
-      console.error("Failed to join hackathon:", error);
+      console.error("Failed to join event:", error);
     },
   });
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-foreground ">Hackathons</h1>
+        <h1 className="text-3xl font-bold text-foreground ">Events</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <LoadingCard key={i} />
@@ -83,7 +94,7 @@ const Hackathons = () => {
   }
 
   if (error) {
-    return <ErrorMessage message="Failed to load hackathons" />;
+    return <ErrorMessage message="Failed to load events" />;
   }
 
   const getStatusColor = (status: string) => {
@@ -107,18 +118,22 @@ const Hackathons = () => {
     return diffDays;
   };
 
-  const handleJoinHackathon = (hackathonId: string) => {
-    joinHackathonMutation.mutate(hackathonId);
+  const handleJoinEvent = (eventId: string) => {
+    joinEventMutation.mutate(eventId);
   };
 
-  const handleCardClick = (hackathonId: string) => {
-    setSelectedHackathonId(hackathonId);
+  const handleCardClick = (eventId: string) => {
+    setSelectedEventId(eventId);
+  };
+
+  const handleViewIdeas = (eventId: string) => {
+    navigate(`/events/${eventId}/ideas`);
   };
 
   // Helper: generate mock ideas and tasks
-  const getDemoIdeas = (hackathonId: string) => [
+  const getDemoIdeas = (eventId: string) => [
     {
-      id: `idea-1-${hackathonId}`,
+      id: `idea-1-${eventId}`,
       referenceNumber: "AI-001",
       title: "Smart AI Chatbot",
       description:
@@ -131,7 +146,7 @@ const Hackathons = () => {
         role: "user",
         skills: [],
       },
-      hackathonId,
+      eventId,
       currentStage: 1,
       isLongRunning: false,
       participants: [],
@@ -174,7 +189,7 @@ const Hackathons = () => {
       joinRequests: [],
     },
     {
-      id: `idea-2-${hackathonId}`,
+      id: `idea-2-${eventId}`,
       referenceNumber: "AI-002",
       title: "AI Image Generator",
       description: "Generate images from text prompts using AI.",
@@ -186,7 +201,7 @@ const Hackathons = () => {
         role: "user",
         skills: [],
       },
-      hackathonId,
+      eventId,
       currentStage: 2,
       isLongRunning: true,
       participants: [],
@@ -223,69 +238,84 @@ const Hackathons = () => {
   ];
 
   // Inject demo ideas if none exist
-  const hackathonsWithIdeas = hackathons?.map((h) => ({
-    ...h,
-    ideas: h.ideas && h.ideas.length > 0 ? h.ideas : getDemoIdeas(h.id),
+  const eventsWithIdeas = events?.map((e) => ({
+    ...e,
+    ideas: e.ideas && e.ideas.length > 0 ? e.ideas : getDemoIdeas(e.id),
   }));
+
+  const computeStatus = (startDate: string, endDate: string) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (now < start) return "upcoming";
+    if (now > end) return "completed";
+    return "active";
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Hackathons</h1>
+        <h1 className="text-3xl font-bold text-foreground">Events</h1>
         <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
           <Trophy className="mr-2 h-4 w-4" />
           View Leaderboard
         </Button>
       </div>
 
+      <EventCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {hackathonsWithIdeas?.map((hackathon) => {
-          const daysUntilStart = getDaysUntil(hackathon.startDate);
-          const daysUntilEnd = getDaysUntil(hackathon.endDate);
+        {eventsWithIdeas?.map((event) => {
+          const daysUntilStart = getDaysUntil(event.startDate);
+          const daysUntilEnd = getDaysUntil(event.endDate);
+          const computedStatus = computeStatus(event.startDate, event.endDate);
 
           return (
             <Card
-              key={hackathon.id}
+              key={event.id}
               className="hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-              onClick={() => handleCardClick(hackathon.id)}
+              onClick={() => handleCardClick(event.id)}
             >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg font-semibold line-clamp-2">
-                    {hackathon.name}
+                    {event.name}
                   </CardTitle>
-                  <Badge className={getStatusColor(hackathon.status)}>
-                    {hackathon.status}
+                  <Badge className={getStatusColor(computedStatus)}>
+                    {computedStatus}
                   </Badge>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 <p className="text-gray-600 text-sm line-clamp-2">
-                  {hackathon.description}
+                  {event.description}
                 </p>
 
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-gray-500">
                     <Calendar className="mr-2 h-4 w-4" />
-                    {new Date(hackathon.startDate).toLocaleDateString()} -{" "}
-                    {new Date(hackathon.endDate).toLocaleDateString()}
+                    {new Date(event.startDate).toLocaleDateString()} -{" "}
+                    {new Date(event.endDate).toLocaleDateString()}
                   </div>
 
                   <div className="flex items-center text-sm text-gray-500">
                     <Users className="mr-2 h-4 w-4" />
-                    {hackathon.currentParticipants}/
-                    {hackathon.maxParticipants || "Unlimited"} participants
+                    {event.currentParticipants}/
+                    {event.maxParticipants || "Unlimited"} participants
                   </div>
 
-                  {hackathon.status === "upcoming" && daysUntilStart > 0 && (
+                  {computedStatus === "upcoming" && daysUntilStart > 0 && (
                     <div className="flex items-center text-sm text-blue-600">
                       <Clock className="mr-2 h-4 w-4" />
                       Starts in {daysUntilStart} days
                     </div>
                   )}
 
-                  {hackathon.status === "active" && daysUntilEnd > 0 && (
+                  {computedStatus === "active" && daysUntilEnd > 0 && (
                     <div className="flex items-center text-sm text-green-600">
                       <Clock className="mr-2 h-4 w-4" />
                       {daysUntilEnd} days remaining
@@ -296,26 +326,14 @@ const Hackathons = () => {
                 <div className="pt-2">
                   <Button
                     className="w-full"
-                    variant={
-                      hackathon.status === "active" ? "default" : "outline"
-                    }
+                    variant="secondary"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleJoinHackathon(hackathon.id);
+                      handleViewIdeas(event.id);
                     }}
-                    disabled={
-                      hackathon.status === "completed" ||
-                      joinHackathonMutation.isPending
-                    }
                   >
-                    {joinHackathonMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {hackathon.status === "active"
-                      ? "Join Now"
-                      : hackathon.status === "upcoming"
-                      ? "Register Interest"
-                      : "View Results"}
+                    <Lightbulb className="mr-2 h-4 w-4" />
+                    View Ideas
                   </Button>
                 </div>
               </CardContent>
@@ -325,17 +343,15 @@ const Hackathons = () => {
       </div>
 
       <Dialog
-        open={!!selectedHackathonId}
-        onOpenChange={() => setSelectedHackathonId(null)}
+        open={!!selectedEventId}
+        onOpenChange={() => setSelectedEventId(null)}
       >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
-              {selectedHackathon?.name}
+              {selectedEvent?.name}
             </DialogTitle>
-            <DialogDescription>
-              {selectedHackathon?.description}
-            </DialogDescription>
+            <DialogDescription>{selectedEvent?.description}</DialogDescription>
           </DialogHeader>
 
           {isLoadingSelected ? (
@@ -347,30 +363,25 @@ const Hackathons = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center text-gray-600">
                   <Calendar className="mr-2 h-4 w-4" />
-                  {selectedHackathon && (
+                  {selectedEvent && (
                     <>
-                      {new Date(
-                        selectedHackathon.startDate
-                      ).toLocaleDateString()}{" "}
-                      -{" "}
-                      {new Date(selectedHackathon.endDate).toLocaleDateString()}
+                      {new Date(selectedEvent.startDate).toLocaleDateString()} -{" "}
+                      {new Date(selectedEvent.endDate).toLocaleDateString()}
                     </>
                   )}
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="mr-2 h-4 w-4" />
-                  {selectedHackathon?.currentParticipants}/
-                  {selectedHackathon?.maxParticipants || "Unlimited"}{" "}
-                  participants
+                  {selectedEvent?.currentParticipants}/
+                  {selectedEvent?.maxParticipants || "Unlimited"} participants
                 </div>
               </div>
 
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Ideas</h3>
-                {selectedHackathon?.ideas &&
-                selectedHackathon.ideas.length > 0 ? (
+                {selectedEvent?.ideas && selectedEvent.ideas.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedHackathon.ideas.map((idea) => (
+                    {selectedEvent.ideas.map((idea) => (
                       <Card
                         key={idea.id}
                         className="hover:shadow-md transition-shadow cursor-pointer"
@@ -451,4 +462,4 @@ const Hackathons = () => {
   );
 };
 
-export default Hackathons;
+export default Events;

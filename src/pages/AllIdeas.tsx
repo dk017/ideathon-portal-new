@@ -27,6 +27,7 @@ import LoadingCard from "@/components/common/LoadingCard";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import IdeaCreationModal from "@/components/ideas/IdeaCreationModal";
 import IdeaDetailsModal from "@/components/ideas/IdeaDetailsModal";
+import EditIdeaModal from "@/components/ideas/EditIdeaModal";
 import { Idea, JoinRequest, User } from "@/types";
 
 const AllIdeas = () => {
@@ -40,6 +41,8 @@ const AllIdeas = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editIdea, setEditIdea] = useState<Idea | null>(null);
 
   const joinIdeaMutation = useMutation({
     mutationFn: async (ideaId: string) => {
@@ -349,41 +352,14 @@ const AllIdeas = () => {
                 </div>
               </div>
 
-              <div className="pt-2 space-y-2">
-                {idea.requirements.some((req) => req.isOpen) && (
-                  <div className="flex items-center text-sm text-indigo-600 bg-indigo-50 p-2 rounded">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2 animate-pulse"></div>
-                    Open requirements available
-                  </div>
-                )}
-
-                <div className="flex space-x-2">
-                  <Button
-                    className="flex-1"
-                    variant={isUserParticipant(idea) ? "outline" : "default"}
-                    onClick={() => handleJoinIdea(idea.id)}
-                    disabled={
-                      isUserParticipant(idea) || joinIdeaMutation.isPending
-                    }
-                  >
-                    {joinIdeaMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {isUserParticipant(idea)
-                      ? idea.owner.id === user?.id
-                        ? "Your Idea"
-                        : "Joined"
-                      : "Join Idea"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="hover:bg-indigo-50"
-                    onClick={() => handleViewDetails(idea)}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="pt-2">
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  onClick={() => handleViewDetails(idea)}
+                >
+                  View Idea
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -423,6 +399,22 @@ const AllIdeas = () => {
         }
         onAcceptRequest={(request) => acceptJoinMutation.mutate(request)}
         onRejectRequest={(request) => rejectJoinMutation.mutate(request)}
+        onEdit={() => {
+          setShowDetailsModal(false);
+          setEditIdea(selectedIdea);
+          setShowEditModal(true);
+        }}
+      />
+
+      <EditIdeaModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        idea={editIdea}
+        onSuccess={() => {
+          setShowEditModal(false);
+          setEditIdea(null);
+          queryClient.invalidateQueries({ queryKey: ["ideas"] });
+        }}
       />
     </div>
   );

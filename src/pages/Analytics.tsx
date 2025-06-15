@@ -38,12 +38,12 @@ const Analytics = () => {
     queryFn: dataService.getIdeas,
   });
 
-  const { data: hackathons, isLoading: hackathonsLoading } = useQuery({
-    queryKey: ["hackathons"],
-    queryFn: dataService.getHackathons,
+  const { data: events, isLoading: eventsLoading } = useQuery({
+    queryKey: ["events"],
+    queryFn: dataService.getEvents,
   });
 
-  const isLoading = usersLoading || ideasLoading || hackathonsLoading;
+  const isLoading = usersLoading || ideasLoading || eventsLoading;
 
   if (isLoading) {
     return (
@@ -60,18 +60,16 @@ const Analytics = () => {
     );
   }
 
-  if (!users || !ideas || !hackathons) {
+  if (!users || !ideas || !events) {
     return <ErrorMessage message="Failed to load analytics data" />;
   }
 
   // Calculate analytics data
-  const totalParticipants = hackathons.reduce(
+  const totalParticipants = events.reduce(
     (sum, h) => sum + h.currentParticipants,
     0
   );
-  const activeHackathons = hackathons.filter(
-    (h) => h.status === "active"
-  ).length;
+  const activeHackathons = events.filter((h) => h.status === "active").length;
   const completedIdeas = ideas.filter((i) => i.currentStage >= 5).length;
   const avgParticipantsPerIdea =
     ideas.reduce((sum, idea) => sum + idea.participants.length, 0) /
@@ -118,17 +116,17 @@ const Analytics = () => {
   const statusData = [
     {
       name: "Active",
-      value: hackathons.filter((h) => h.status === "active").length,
+      value: events.filter((h) => h.status === "active").length,
       color: "#10B981",
     },
     {
       name: "Upcoming",
-      value: hackathons.filter((h) => h.status === "upcoming").length,
+      value: events.filter((h) => h.status === "upcoming").length,
       color: "#3B82F6",
     },
     {
       name: "Completed",
-      value: hackathons.filter((h) => h.status === "completed").length,
+      value: events.filter((h) => h.status === "completed").length,
       color: "#6B7280",
     },
   ];

@@ -1,62 +1,58 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
-import UserDashboard from "@/components/dashboard/UserDashboard";
-import Hackathons from "@/pages/Hackathons";
-import AllIdeas from "@/pages/AllIdeas";
-import MyIdeas from "@/pages/MyIdeas";
-import SkillMatrix from "@/pages/SkillMatrix";
-import Analytics from "@/pages/Analytics";
 import { cn } from "@/lib/utils";
+import EventCreationModal from "@/components/events/EventCreationModal";
 
 const MainLayout = () => {
   const { user } = useAuth();
-  const [activeView, setActiveView] = useState("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
 
   const handleMenuToggle = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const renderContent = () => {
-    // Normalize route names
-    const normalizedView = activeView.toLowerCase().trim();
+  const getActiveView = () => {
+    const path = location.pathname;
+    if (path.startsWith("/events/")) return "events";
+    if (path.startsWith("/ideas/")) return "all-ideas";
+    if (path.startsWith("/my-ideas")) return "my-ideas";
+    if (path.startsWith("/skill-matrix")) return "skill-matrix";
+    if (path.startsWith("/analytics")) return "analytics";
+    if (path.startsWith("/users")) return "users";
+    return "dashboard";
+  };
 
-    switch (normalizedView) {
+  const handleViewChange = (view: string) => {
+    switch (view) {
       case "dashboard":
-        return user?.role === "admin" ? <AdminDashboard /> : <UserDashboard />;
-      case "hackathons":
-        return <Hackathons />;
+        navigate("/");
+        break;
+      case "events":
+        navigate("/events");
+        break;
       case "all-ideas":
-      case "browse-ideas":
-      case "ideas":
-        return <AllIdeas />;
+        navigate("/ideas");
+        break;
       case "my-ideas":
-        return <MyIdeas />;
+        navigate("/my-ideas");
+        break;
       case "skill-matrix":
-        return <SkillMatrix />;
+        navigate("/skill-matrix");
+        break;
       case "analytics":
-        return user?.role === "admin" ? (
-          <Analytics />
-        ) : (
-          <div className="p-6">Access Denied</div>
-        );
+        navigate("/analytics");
+        break;
       case "users":
-        return user?.role === "admin" ? (
-          <div className="p-6">Users Management - Coming Soon</div>
-        ) : (
-          <div className="p-6">Access Denied</div>
-        );
-      case "create-hackathon":
-        return user?.role === "admin" ? (
-          <div className="p-6">Create Hackathon Form - Coming Soon</div>
-        ) : (
-          <div className="p-6">Access Denied</div>
-        );
+        navigate("/users");
+        break;
       default:
-        return user?.role === "admin" ? <AdminDashboard /> : <UserDashboard />;
+        navigate("/");
     }
   };
 
@@ -75,9 +71,10 @@ const MainLayout = () => {
           )}
         >
           <Sidebar
-            activeView={activeView}
-            onViewChange={setActiveView}
+            activeView={getActiveView()}
+            onViewChange={handleViewChange}
             isOpen={isMobileMenuOpen || true}
+            onCreateEvent={() => setShowCreateEventModal(true)}
           />
         </div>
 
@@ -93,11 +90,15 @@ const MainLayout = () => {
         <div className="flex-1 overflow-auto">
           <div className="container max-w-7xl mx-auto p-6">
             <div className="bg-card rounded-lg shadow-sm p-6 min-h-[calc(100vh-8rem)]">
-              {renderContent()}
+              <Outlet />
             </div>
           </div>
         </div>
       </div>
+      <EventCreationModal
+        isOpen={showCreateEventModal}
+        onClose={() => setShowCreateEventModal(false)}
+      />
     </div>
   );
 };

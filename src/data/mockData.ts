@@ -1,5 +1,4 @@
-
-import { Hackathon, Idea, User, Stage, Requirement, Notification } from '@/types';
+import { Event, Idea, User, Stage, Requirement, Notification } from '@/types';
 
 export const mockStages: Stage[] = [
   { id: 'stage-1', name: 'Ideation', description: 'Initial idea submission', order: 1 },
@@ -17,7 +16,7 @@ export const mockUsers: User[] = [
   { id: 'admin-1', name: 'Admin User', email: 'admin@example.com', role: 'admin', skills: ['Management', 'Strategy'] }
 ];
 
-export const mockHackathons: Hackathon[] = [
+export const mockEvents: Event[] = [
   {
     id: 'hack-1',
     name: 'AI Innovation Challenge 2024',
@@ -27,7 +26,9 @@ export const mockHackathons: Hackathon[] = [
     status: 'active',
     stages: mockStages,
     maxParticipants: 100,
-    currentParticipants: 42
+    currentParticipants: 42,
+    ideas: [],
+    category: ''
   },
   {
     id: 'hack-2',
@@ -38,7 +39,9 @@ export const mockHackathons: Hackathon[] = [
     status: 'upcoming',
     stages: mockStages,
     maxParticipants: 80,
-    currentParticipants: 15
+    currentParticipants: 15,
+    ideas: [],
+    category: ''
   },
   {
     id: 'hack-3',
@@ -49,7 +52,9 @@ export const mockHackathons: Hackathon[] = [
     status: 'completed',
     stages: mockStages,
     maxParticipants: 60,
-    currentParticipants: 58
+    currentParticipants: 58,
+    ideas: [],
+    category: ''
   }
 ];
 
@@ -78,12 +83,13 @@ export const mockIdeas: Idea[] = [
     description: 'AI-powered system to optimize traffic flow in urban areas using real-time data',
     techStack: ['Python', 'TensorFlow', 'React', 'Node.js'],
     owner: mockUsers[0],
-    hackathonId: 'hack-1',
+    eventId: 'hack-1',
     currentStage: 2,
     isLongRunning: false,
     participants: [mockUsers[0], mockUsers[1]],
     requirements: [mockRequirements[0]],
-    createdAt: '2024-06-16T10:00:00Z'
+    createdAt: '2024-06-16T10:00:00Z',
+    tasks: []
   },
   {
     id: 'idea-2',
@@ -92,12 +98,13 @@ export const mockIdeas: Idea[] = [
     description: 'Intelligent chatbot to provide preliminary health advice and appointment scheduling',
     techStack: ['Python', 'NLP', 'React Native', 'Firebase'],
     owner: mockUsers[1],
-    hackathonId: 'hack-1',
+    eventId: 'hack-1',
     currentStage: 3,
     isLongRunning: false,
     participants: [mockUsers[1], mockUsers[2], mockUsers[3]],
     requirements: [],
-    createdAt: '2024-06-17T14:30:00Z'
+    createdAt: '2024-06-17T14:30:00Z',
+    tasks: []
   },
   {
     id: 'idea-3',
@@ -106,12 +113,13 @@ export const mockIdeas: Idea[] = [
     description: 'Mobile app to track and reduce personal carbon footprint with gamification',
     techStack: ['React Native', 'Node.js', 'MongoDB'],
     owner: mockUsers[2],
-    hackathonId: 'hack-2',
+    eventId: 'hack-2',
     currentStage: 1,
     isLongRunning: true,
     participants: [mockUsers[2]],
     requirements: [mockRequirements[1]],
-    createdAt: '2024-06-20T09:15:00Z'
+    createdAt: '2024-06-20T09:15:00Z',
+    tasks: []
   }
 ];
 

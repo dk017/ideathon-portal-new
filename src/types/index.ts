@@ -7,10 +7,11 @@ export interface User {
   avatar?: string;
 }
 
-export interface Hackathon {
+export interface Event {
   id: string;
   name: string;
   description: string;
+  category: string;
   startDate: string;
   endDate: string;
   status: 'upcoming' | 'active' | 'completed';
@@ -35,7 +36,7 @@ export interface Idea {
   description: string;
   techStack: string[];
   owner: User;
-  hackathonId: string;
+  eventId: string;
   currentStage: number;
   isLongRunning: boolean;
   participants: User[];
