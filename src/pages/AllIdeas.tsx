@@ -13,6 +13,7 @@ import { Lightbulb, Users, Search, Plus, ArrowRight, Loader2 } from 'lucide-reac
 import LoadingCard from '@/components/common/LoadingCard';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
+import IdeaDetailsModal from '@/components/ideas/IdeaDetailsModal';
 
 const AllIdeas = () => {
   const { data: ideas, isLoading, error } = useIdeas();
@@ -23,6 +24,8 @@ const AllIdeas = () => {
   const [filterStage, setFilterStage] = useState('all');
   const [filterTech, setFilterTech] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const joinIdeaMutation = useMutation({
     mutationFn: async (ideaId: string) => {
@@ -104,6 +107,11 @@ const AllIdeas = () => {
 
   const isUserParticipant = (idea: any) => {
     return idea.participants.some((p: any) => p.id === user?.id) || idea.owner.id === user?.id;
+  };
+
+  const handleViewDetails = (idea: any) => {
+    setSelectedIdea(idea);
+    setShowDetailsModal(true);
   };
 
   return (
@@ -234,7 +242,12 @@ const AllIdeas = () => {
                       'Join Idea'
                     }
                   </Button>
-                  <Button size="sm" variant="ghost" className="hover:bg-indigo-50">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="hover:bg-indigo-50"
+                    onClick={() => handleViewDetails(idea)}
+                  >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -259,6 +272,13 @@ const AllIdeas = () => {
       <IdeaCreationModal 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)} 
+      />
+
+      <IdeaDetailsModal
+        idea={selectedIdea}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        isOwner={selectedIdea?.owner.id === user?.id}
       />
     </div>
   );

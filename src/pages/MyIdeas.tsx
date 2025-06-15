@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserIdeas } from '@/hooks/useIdeas';
@@ -14,6 +13,7 @@ import { Lightbulb, Users, Search, Plus, Edit, Calendar } from 'lucide-react';
 import LoadingCard from '@/components/common/LoadingCard';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
+import IdeaDetailsModal from '@/components/ideas/IdeaDetailsModal';
 
 const MyIdeas = () => {
   const { user } = useAuth();
@@ -22,6 +22,8 @@ const MyIdeas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedIdea, setSelectedIdea] = useState<any>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   if (isLoading) {
     return (
@@ -62,6 +64,16 @@ const MyIdeas = () => {
   const getStageText = (stage: number) => {
     const stages = ['Ideation', 'Planning', 'Development', 'Testing', 'Presentation'];
     return stages[stage - 1] || 'Unknown';
+  };
+
+  const handleManageIdea = (idea: any) => {
+    setSelectedIdea(idea);
+    setShowDetailsModal(true);
+  };
+
+  const handleViewDetails = (idea: any) => {
+    setSelectedIdea(idea);
+    setShowDetailsModal(true);
   };
 
   return (
@@ -229,11 +241,20 @@ const MyIdeas = () => {
                 )}
                 
                 <div className="flex space-x-2">
-                  <Button className="flex-1 gradient-button text-white" size="sm">
+                  <Button 
+                    className="flex-1 gradient-button text-white" 
+                    size="sm"
+                    onClick={() => handleManageIdea(idea)}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Manage
                   </Button>
-                  <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                    onClick={() => handleViewDetails(idea)}
+                  >
                     View Details
                   </Button>
                 </div>
@@ -269,6 +290,13 @@ const MyIdeas = () => {
       <IdeaCreationModal 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)} 
+      />
+
+      <IdeaDetailsModal
+        idea={selectedIdea}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        isOwner={true}
       />
     </div>
   );
