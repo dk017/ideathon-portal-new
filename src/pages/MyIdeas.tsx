@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
-import { useIdeas } from '@/hooks/useIdeas';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserIdeas } from '@/hooks/useIdeas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataService } from '@/services/dataService';
 import { useToast } from '@/hooks/use-toast';
@@ -9,57 +10,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lightbulb, Users, Search, Plus, ArrowRight, Loader2 } from 'lucide-react';
+import { Lightbulb, Users, Search, Plus, Edit, Calendar } from 'lucide-react';
 import LoadingCard from '@/components/common/LoadingCard';
 import ErrorMessage from '@/components/common/ErrorMessage';
 import IdeaCreationModal from '@/components/ideas/IdeaCreationModal';
 
-const AllIdeas = () => {
-  const { data: ideas, isLoading, error } = useIdeas();
+const MyIdeas = () => {
   const { user } = useAuth();
+  const { data: ideas, isLoading, error } = useUserIdeas(user?.id || '');
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
-  const [filterTech, setFilterTech] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const joinIdeaMutation = useMutation({
-    mutationFn: async (ideaId: string) => {
-      if (!user) throw new Error('User not authenticated');
-      return dataService.joinIdea(ideaId, user.id);
-    },
-    onSuccess: (success, ideaId) => {
-      if (success) {
-        queryClient.invalidateQueries({ queryKey: ['ideas'] });
-        toast({
-          title: "Success",
-          description: "You have successfully joined the idea!",
-        });
-      } else {
-        toast({
-          title: "Unable to join",
-          description: "You may already be a participant or the idea is full.",
-          variant: "destructive",
-        });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to join idea. Please try again.",
-        variant: "destructive",
-      });
-      console.error('Failed to join idea:', error);
-    }
-  });
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">All Ideas</h1>
+        <h1 className="text-3xl font-bold text-gray-900">My Ideas</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3].map((i) => (
             <LoadingCard key={i} />
           ))}
         </div>
@@ -68,18 +37,15 @@ const AllIdeas = () => {
   }
 
   if (error) {
-    return <ErrorMessage message="Failed to load ideas" />;
+    return <ErrorMessage message="Failed to load your ideas" />;
   }
 
   const filteredIdeas = ideas?.filter(idea => {
     const matchesSearch = idea.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          idea.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStage = filterStage === 'all' || idea.currentStage.toString() === filterStage;
-    const matchesTech = filterTech === 'all' || idea.techStack.some(tech => 
-      tech.toLowerCase().includes(filterTech.toLowerCase())
-    );
     
-    return matchesSearch && matchesStage && matchesTech;
+    return matchesSearch && matchesStage;
   });
 
   const getStageColor = (stage: number) => {
@@ -98,18 +64,13 @@ const AllIdeas = () => {
     return stages[stage - 1] || 'Unknown';
   };
 
-  const handleJoinIdea = (ideaId: string) => {
-    joinIdeaMutation.mutate(ideaId);
-  };
-
-  const isUserParticipant = (idea: any) => {
-    return idea.participants.some((p: any) => p.id === user?.id) || idea.owner.id === user?.id;
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">All Ideas</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">My Ideas</h1>
+          <p className="text-gray-600 mt-1">Manage and track your innovation projects</p>
+        </div>
         <Button 
           onClick={() => setShowCreateModal(true)}
           className="gradient-button text-white hover:shadow-lg"
@@ -119,13 +80,70 @@ const AllIdeas = () => {
         </Button>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="idea-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Lightbulb className="h-5 w-5 text-indigo-600" />
+              <div>
+                <p className="text-sm text-gray-600">Total Ideas</p>
+                <p className="text-2xl font-bold text-gray-900">{ideas?.length || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="idea-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm text-gray-600">Collaborators</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {ideas?.reduce((total, idea) => total + idea.participants.length, 0) || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="idea-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Edit className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-600">In Development</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {ideas?.filter(idea => idea.currentStage >= 2 && idea.currentStage <= 4).length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="idea-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="text-sm text-gray-600">Long Running</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {ideas?.filter(idea => idea.isLongRunning).length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 p-4 gradient-card rounded-lg">
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search ideas..."
+              placeholder="Search your ideas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 bg-white/50 border-indigo-200 focus:border-indigo-400"
@@ -145,20 +163,9 @@ const AllIdeas = () => {
             <SelectItem value="5">Presentation</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={filterTech} onValueChange={setFilterTech}>
-          <SelectTrigger className="w-40 bg-white/50 border-indigo-200 focus:border-indigo-400">
-            <SelectValue placeholder="Technology" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Tech</SelectItem>
-            <SelectItem value="React">React</SelectItem>
-            <SelectItem value="Python">Python</SelectItem>
-            <SelectItem value="Node.js">Node.js</SelectItem>
-            <SelectItem value="TensorFlow">TensorFlow</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
+      {/* Ideas Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredIdeas?.map((idea) => (
           <Card key={idea.id} className="idea-card group">
@@ -191,7 +198,7 @@ const AllIdeas = () => {
                   </Badge>
                   <div className="flex items-center text-sm text-gray-500">
                     <Users className="mr-1 h-4 w-4" />
-                    {idea.participants.length}
+                    {idea.participants.length} members
                   </div>
                 </div>
                 
@@ -209,7 +216,7 @@ const AllIdeas = () => {
                 </div>
                 
                 <div className="text-sm text-gray-500">
-                  <span>Owner: {idea.owner.name}</span>
+                  <span>Created: {new Date(idea.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
               
@@ -217,25 +224,17 @@ const AllIdeas = () => {
                 {idea.requirements.some(req => req.isOpen) && (
                   <div className="flex items-center text-sm text-indigo-600 bg-indigo-50 p-2 rounded">
                     <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2 animate-pulse"></div>
-                    Open requirements available
+                    Looking for {idea.requirements.filter(req => req.isOpen).length} team member(s)
                   </div>
                 )}
                 
                 <div className="flex space-x-2">
-                  <Button 
-                    className="flex-1" 
-                    variant={isUserParticipant(idea) ? "outline" : "default"}
-                    onClick={() => handleJoinIdea(idea.id)}
-                    disabled={isUserParticipant(idea) || joinIdeaMutation.isPending}
-                  >
-                    {joinIdeaMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isUserParticipant(idea) ? 
-                      (idea.owner.id === user?.id ? 'Your Idea' : 'Joined') : 
-                      'Join Idea'
-                    }
+                  <Button className="flex-1 gradient-button text-white" size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Manage
                   </Button>
-                  <Button size="sm" variant="ghost" className="hover:bg-indigo-50">
-                    <ArrowRight className="h-4 w-4" />
+                  <Button size="sm" variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+                    View Details
                   </Button>
                 </div>
               </div>
@@ -247,12 +246,23 @@ const AllIdeas = () => {
       {filteredIdeas?.length === 0 && (
         <div className="text-center py-12">
           <Lightbulb className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">No ideas found</h3>
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">
+            {ideas?.length === 0 ? 'No ideas created yet' : 'No ideas match your filters'}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || filterStage !== 'all' || filterTech !== 'all' 
-              ? 'Try adjusting your filters or search terms.'
-              : 'Get started by creating your first idea.'}
+            {ideas?.length === 0 
+              ? 'Start your innovation journey by creating your first idea.'
+              : 'Try adjusting your search terms or filters.'}
           </p>
+          {ideas?.length === 0 && (
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="mt-4 gradient-button text-white"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Your First Idea
+            </Button>
+          )}
         </div>
       )}
 
@@ -264,4 +274,4 @@ const AllIdeas = () => {
   );
 };
 
-export default AllIdeas;
+export default MyIdeas;
