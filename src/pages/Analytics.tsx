@@ -143,7 +143,9 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">
+        Analytics Dashboard
+      </h1>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -155,7 +157,7 @@ const Analytics = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Total Participants
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-white">
                   {totalParticipants}
                 </p>
                 <p className="text-xs text-green-600">+12% from last month</p>
@@ -170,9 +172,7 @@ const Analytics = () => {
               <Lightbulb className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Ideas</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {ideas.length}
-                </p>
+                <p className="text-2xl font-bold text-white">{ideas.length}</p>
                 <p className="text-xs text-green-600">+8% from last month</p>
               </div>
             </div>
@@ -187,7 +187,7 @@ const Analytics = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Active Hackathons
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-white">
                   {activeHackathons}
                 </p>
                 <p className="text-xs text-blue-600">2 ending this week</p>
@@ -204,7 +204,7 @@ const Analytics = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Completed Ideas
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-white">
                   {completedIdeas}
                 </p>
                 <p className="text-xs text-gray-600">

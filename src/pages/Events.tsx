@@ -263,7 +263,7 @@ const Events = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Events</h1>
+        <h1 className="text-3xl font-bold text-white">Events</h1>
         <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
           <Trophy className="mr-2 h-4 w-4" />
           View Leaderboard

@@ -232,7 +232,7 @@ const AllIdeas = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">All Ideas</h1>
+        <h1 className="text-3xl font-bold text-white">All Ideas</h1>
         <Button
           onClick={() => setShowCreateModal(true)}
           className="gradient-button text-white hover:shadow-lg"

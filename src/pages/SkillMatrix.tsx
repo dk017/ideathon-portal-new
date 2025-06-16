@@ -88,11 +88,7 @@ const SkillMatrix = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Skill Matrix</h1>
-        <Button variant="outline">
-          <TrendingUp className="mr-2 h-4 w-4" />
-          Export Report
-        </Button>
+        <h1 className="text-4xl font-bold mb-6 text-white">Skill Matrix</h1>
       </div>
 
       {/* Search */}
@@ -116,7 +112,7 @@ const SkillMatrix = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Total Skills
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-white">
                   {allSkills.length}
                 </p>
               </div>
@@ -132,9 +128,7 @@ const SkillMatrix = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Active Users
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.length}
-                </p>
+                <p className="text-2xl font-bold text-white">{users.length}</p>
               </div>
             </div>
           </CardContent>
@@ -148,9 +142,7 @@ const SkillMatrix = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Ideas Using Skills
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {ideas.length}
-                </p>
+                <p className="text-2xl font-bold text-white">{ideas.length}</p>
               </div>
             </div>
           </CardContent>
@@ -195,11 +187,15 @@ const SkillMatrix = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Users with skill:</span>
-                    <span className="font-medium">{stats.userCount}</span>
+                    <span className="font-medium text-white">
+                      {stats.userCount}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Ideas using skill:</span>
-                    <span className="font-medium">{stats.ideaCount}</span>
+                    <span className="font-medium text-white">
+                      {stats.ideaCount}
+                    </span>
                   </div>
                 </div>
 

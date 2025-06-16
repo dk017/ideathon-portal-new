@@ -7,22 +7,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Calendar,
-  Lightbulb,
-  Users,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { Calendar, Lightbulb, Users, TrendingUp, Clock } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { useIdeas } from "@/hooks/useIdeas";
 import { mockUsers } from "@/data/mockData";
-import LoadingCard from "@/components/common/LoadingCard";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -36,6 +25,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useNavigate } from "react-router-dom";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -60,6 +50,7 @@ const AdminDashboard = () => {
     error: ideasError,
     refetch: refetchIdeas,
   } = useIdeas();
+  const router = useNavigate();
 
   const activeEvents = events?.filter((h) => h.status === "active") || [];
   const totalIdeas = ideas?.length || 0;
@@ -224,30 +215,61 @@ const AdminDashboard = () => {
       {/* Top Section: Stats & Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Events
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {events?.filter((e) => e.status === "active").length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">Currently running</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Ideas</CardTitle>
-              <Lightbulb className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{ideas?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Across all events</p>
-            </CardContent>
-          </Card>
+          {/* Active Events - Clickable */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="View all events"
+            onClick={() => router("/events")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") router("/events");
+            }}
+            className="focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg cursor-pointer transition-shadow hover:shadow-lg"
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Active Events
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {events?.filter((e) => e.status === "active").length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Currently running
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Total Ideas - Clickable */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="View all ideas"
+            onClick={() => router("/ideas")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") router("/ideas");
+            }}
+            className="focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg cursor-pointer transition-shadow hover:shadow-lg"
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Ideas
+                </CardTitle>
+                <Lightbulb className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ideas?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Across all events
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Active Users */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -260,6 +282,7 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">Registered users</p>
             </CardContent>
           </Card>
+          {/* Completion Rate */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
