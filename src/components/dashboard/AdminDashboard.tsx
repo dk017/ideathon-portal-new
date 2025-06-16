@@ -24,6 +24,28 @@ import { useIdeas } from "@/hooks/useIdeas";
 import { mockUsers } from "@/data/mockData";
 import LoadingCard from "@/components/common/LoadingCard";
 import ErrorMessage from "@/components/common/ErrorMessage";
+import { Bar, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const AdminDashboard = () => {
   const {
@@ -90,6 +112,80 @@ const AdminDashboard = () => {
     }
   };
 
+  // Mock data for charts
+  const ideaTrendsData = {
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    datasets: [
+      {
+        label: "Ideas Submitted",
+        data: [2, 4, 3, 5, 6, 2, 4],
+        backgroundColor: "rgba(99, 102, 241, 0.7)",
+        borderColor: "rgba(99, 102, 241, 1)",
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  };
+  const techStackData = {
+    labels: ["React", "Python", "Node.js", "TensorFlow", "Vue", "Go"],
+    datasets: [
+      {
+        label: "Usage",
+        data: [12, 9, 7, 5, 3, 2],
+        backgroundColor: [
+          "rgba(99, 102, 241, 0.7)",
+          "rgba(16, 185, 129, 0.7)",
+          "rgba(251, 191, 36, 0.7)",
+          "rgba(239, 68, 68, 0.7)",
+          "rgba(59, 130, 246, 0.7)",
+          "rgba(139, 92, 246, 0.7)",
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+  const timelineEvents = [
+    { name: "AI Innovation Challenge", date: "2024-06-15", status: "active" },
+    {
+      name: "Sustainability Hackathon",
+      date: "2024-08-01",
+      status: "upcoming",
+    },
+    { name: "FinTech Revolution", date: "2024-04-01", status: "completed" },
+  ];
+  const activityFeed = [
+    {
+      id: 1,
+      text: "New idea submitted: Smart City Traffic Optimizer",
+      time: "2h ago",
+    },
+    {
+      id: 2,
+      text: "Event created: AI Innovation Challenge 2024",
+      time: "1d ago",
+    },
+    { id: 3, text: "User joined: Jane Smith", time: "2d ago" },
+    {
+      id: 4,
+      text: "Idea moved to testing: Healthcare Chatbot Assistant",
+      time: "3d ago",
+    },
+  ];
+  const pendingApprovals = [
+    {
+      id: 1,
+      type: "Join Request",
+      detail: "John Doe requests to join AI Innovation Challenge",
+    },
+    { id: 2, type: "Idea", detail: "Review: AI SaaS Challenge" },
+  ];
+  const topContributors = [
+    { id: 1, name: "Jane Smith", ideas: 5 },
+    { id: 2, name: "John Doe", ideas: 4 },
+    { id: 3, name: "Alice Lee", ideas: 3 },
+  ];
+
   // Show error if both requests failed
   if (eventsError && ideasError) {
     return (
@@ -113,189 +209,240 @@ const AdminDashboard = () => {
     );
   }
 
+  // Compute status for each event based on date
+  const getEventStatus = (startDate, endDate) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (now < start) return "upcoming";
+    if (now > end) return "completed";
+    return "active";
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage events, ideas, and participants
-        </p>
+    <div className="space-y-8">
+      {/* Top Section: Stats & Actions */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Events
+              </CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {events?.filter((e) => e.status === "active").length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Currently running</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Ideas</CardTitle>
+              <Lightbulb className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{ideas?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">Across all events</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Users
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalUsers}</div>
+              <p className="text-xs text-muted-foreground">Registered users</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Completion Rate
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{completionRate}%</div>
+              <Progress value={completionRate} className="mt-2" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {eventsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{activeEvents.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  {events?.filter((h) => h.status === "upcoming").length || 0}{" "}
-                  upcoming
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Ideas</CardTitle>
-            <Lightbulb className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {ideasLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-12" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{totalIdeas}</div>
-                <p className="text-xs text-muted-foreground">
-                  {ideas?.filter((i) => !i.isLongRunning).length || 0} active
-                  projects
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Participants</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              +12% from last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Completion Rate
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completionRate}%</div>
-            <Progress value={completionRate} className="mt-2" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active Hackathons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Events</CardTitle>
-          <CardDescription>Currently running events</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {eventsLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="p-4 border border-gray-200 rounded-lg">
-                  <div className="space-y-3">
-                    <Skeleton className="h-6 w-1/3" />
-                    <Skeleton className="h-4 w-2/3" />
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <div className="flex space-x-2">
-                        <Skeleton className="h-8 w-16" />
-                        <Skeleton className="h-8 w-20" />
+      {/* Main Section: Analytics & Visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left: 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Event Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Event Timeline</CardTitle>
+              <CardDescription>
+                All events (color-coded by status)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                {events && events.length > 0 ? (
+                  events.map((evt, idx) => {
+                    const status = getEventStatus(evt.startDate, evt.endDate);
+                    return (
+                      <div
+                        key={evt.id || idx}
+                        className="flex items-center gap-4"
+                      >
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            status === "active"
+                              ? "bg-green-500"
+                              : status === "upcoming"
+                              ? "bg-blue-500"
+                              : "bg-gray-400"
+                          }`}
+                        ></div>
+                        <span className="font-medium text-foreground">
+                          {evt.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {evt.startDate} - {evt.endDate}
+                        </span>
+                        <Badge
+                          variant={
+                            status === "active"
+                              ? "default"
+                              : status === "upcoming"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </Badge>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : eventsError ? (
-            <ErrorMessage
-              message="Failed to load events"
-              onRetry={refetchEvents}
-            />
-          ) : activeEvents.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No active events at the moment.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {activeEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-foreground">
-                      {event.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {event.description}
-                    </p>
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <span>
-                        Ends: {new Date(event.endDate).toLocaleDateString()}
-                      </span>
-                      <Badge variant="secondary">
-                        {event.currentParticipants}/{event.maxParticipants}{" "}
-                        participants
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      Manage
-                    </Button>
-                    <Button size="sm">View Details</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>
-            Latest platform activities and updates
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                {getActivityIcon(activity.type)}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{activity.action}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {activity.details}
-                  </p>
-                </div>
-                <span className="text-xs text-gray-500">{activity.time}</span>
+                    );
+                  })
+                ) : (
+                  <span className="text-muted-foreground text-sm">
+                    No events found
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+          {/* Idea Submission Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Idea Submission Trends</CardTitle>
+              <CardDescription>
+                Ideas submitted per day (last week)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Line
+                data={ideaTrendsData}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false } },
+                }}
+                height={120}
+              />
+            </CardContent>
+          </Card>
+          {/* Popular Tech Stacks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Popular Tech Stacks</CardTitle>
+              <CardDescription>Most used technologies in ideas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Bar
+                data={techStackData}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { display: false } },
+                }}
+                height={120}
+              />
+            </CardContent>
+          </Card>
+        </div>
+        {/* Right: 1/3 width */}
+        <div className="space-y-6">
+          {/* Live Activity Feed */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Activity Feed</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {activityFeed.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-2 text-sm text-foreground"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>
+                    <span>{item.text}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {item.time}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Pending Approvals */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Approvals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {pendingApprovals.length === 0 ? (
+                  <span className="text-muted-foreground text-sm">
+                    No pending approvals
+                  </span>
+                ) : (
+                  pendingApprovals.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Badge variant="secondary">{item.type}</Badge>
+                      <span>{item.detail}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Top Contributors */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Contributors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {topContributors.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <span className="font-medium text-foreground">
+                      {user.name}
+                    </span>
+                    <Badge variant="outline">{user.ideas} ideas</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };

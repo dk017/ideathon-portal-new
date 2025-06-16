@@ -16,6 +16,8 @@ import MyIdeas from "@/pages/MyIdeas";
 import SkillMatrix from "@/pages/SkillMatrix";
 import Analytics from "@/pages/Analytics";
 import Users from "@/pages/Users";
+import Login from "./components/Login";
+import AdminDashboard from "./components/dashboard/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +30,7 @@ const App = () => {
         <Router>
           <AuthProvider>
             <Routes>
-              <Route path="/signin" element={<SignIn />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="events" element={<Events />} />

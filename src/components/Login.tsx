@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import {
   Card,
   CardContent,
@@ -14,11 +16,15 @@ import { Badge } from "@/components/ui/badge";
 const Login = () => {
   const [email, setEmail] = useState("");
   const { login } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleDemoLogin = (role: "admin" | "user") => {
     const demoEmail =
       role === "admin" ? "admin@example.com" : "user@example.com";
     login(demoEmail, role);
+    const from = location.state?.from?.pathname || "/";
+    navigate(from, { replace: true });
   };
 
   const handleLogin = () => {
@@ -98,7 +104,7 @@ const Login = () => {
             <Button
               onClick={() => handleDemoLogin("user")}
               variant="outline"
-              className="w-full border-green-200 hover:bg-green-50"
+              className="w-full border-green-200 hover:bg-blue-50"
             >
               <Badge
                 variant="secondary"

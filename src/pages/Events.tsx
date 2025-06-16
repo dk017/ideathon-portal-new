@@ -252,6 +252,14 @@ const Events = () => {
     return "active";
   };
 
+  // Sort events: active > upcoming > completed
+  const statusOrder = { active: 0, upcoming: 1, completed: 2 };
+  const sortedEventsWithIdeas = eventsWithIdeas?.slice().sort((a, b) => {
+    const aStatus = computeStatus(a.startDate, a.endDate);
+    const bStatus = computeStatus(b.startDate, b.endDate);
+    return statusOrder[aStatus] - statusOrder[bStatus];
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -268,7 +276,7 @@ const Events = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {eventsWithIdeas?.map((event) => {
+        {sortedEventsWithIdeas?.map((event) => {
           const daysUntilStart = getDaysUntil(event.startDate);
           const daysUntilEnd = getDaysUntil(event.endDate);
           const computedStatus = computeStatus(event.startDate, event.endDate);

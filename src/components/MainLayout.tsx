@@ -1,17 +1,28 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate, Navigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Sidebar from "@/components/layout/Sidebar";
 import { cn } from "@/lib/utils";
 import EventCreationModal from "@/components/events/EventCreationModal";
 
 const MainLayout = () => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-lg">
+        Loading...
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   const handleMenuToggle = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -19,12 +30,15 @@ const MainLayout = () => {
 
   const getActiveView = () => {
     const path = location.pathname;
-    if (path.startsWith("/events/")) return "events";
-    if (path.startsWith("/ideas/")) return "all-ideas";
-    if (path.startsWith("/my-ideas")) return "my-ideas";
-    if (path.startsWith("/skill-matrix")) return "skill-matrix";
-    if (path.startsWith("/analytics")) return "analytics";
-    if (path.startsWith("/users")) return "users";
+    if (path === "/events" || path.startsWith("/events/")) return "events";
+    if (path === "/ideas" || path.startsWith("/ideas/")) return "all-ideas";
+    if (path === "/my-ideas" || path.startsWith("/my-ideas/"))
+      return "my-ideas";
+    if (path === "/skill-matrix" || path.startsWith("/skill-matrix/"))
+      return "skill-matrix";
+    if (path === "/analytics" || path.startsWith("/analytics/"))
+      return "analytics";
+    if (path === "/users" || path.startsWith("/users/")) return "users";
     return "dashboard";
   };
 
