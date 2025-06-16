@@ -224,7 +224,7 @@ const AdminDashboard = () => {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") router("/events");
             }}
-            className="focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg cursor-pointer transition-shadow hover:shadow-lg"
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg cursor-pointer transition duration-150 hover:bg-indigo-50 active:bg-indigo-100 hover:shadow-lg"
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -252,7 +252,7 @@ const AdminDashboard = () => {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") router("/ideas");
             }}
-            className="focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg cursor-pointer transition-shadow hover:shadow-lg"
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg cursor-pointer transition duration-150 hover:bg-indigo-50 active:bg-indigo-100 hover:shadow-lg"
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
